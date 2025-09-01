@@ -8,7 +8,7 @@
   command = "echo 'No build command required'"
   
   # This tells Netlify that your published site is in the root directory.
-  publish = "/"
+  publish = "."
 
 [functions]
   # This explicitly tells Netlify where to find your serverless functions.
@@ -18,4 +18,9 @@
   # Using a recent LTS (Long-Term Support) version is recommended.
   node_bundler = "esbuild"
   included_files = ["node_modules/node-fetch/**"]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
 
