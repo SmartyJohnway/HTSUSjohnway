@@ -5,6 +5,7 @@
 [build]
   # This command is not strictly necessary for a simple HTML site, but it's good practice.
   # If you had a build step, you would put the command here (e.g., "npm run build").
+  base = "tariffhtsusearcher"
   command = "echo 'No build command required'"
   
   # This tells Netlify that your published site is in the root directory.
@@ -23,4 +24,5 @@
 from = "/*"
 to = "/index.html"
 status = 200
+
 
