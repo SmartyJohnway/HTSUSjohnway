@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美國鋼鋁及稅則查詢系統 (整合版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">美國鋼鋁及稅則查詢系統</h1>
+            <p class="text-gray-600 mt-2">整合關稅規則查詢與官方 HTSUS API 資料庫</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="flex -mb-px space-x-2 md:space-x-6" aria-label="Tabs">
+                <button id="tabQuery" class="tab-btn active whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg">
+                    關稅查詢
+                </button>
+                <button id="tabHts" class="tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg">
+                    HTSUS 稅則資料庫 (API)
+                </button>
+                <button id="tabSources" class="tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg">
+                    官方來源
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab 1: Steel/Aluminum Tariff Content -->
+        <div id="queryContent">
+            <!-- Search and Filter Bar -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 sticky top-4 z-10">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="relative flex-grow">
+                        <input type="text" id="searchInput" placeholder="請先載入資料..." class="w-full p-4 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow disabled:opacity-50" disabled>
+                        <svg class="w-6 h-6 text-gray-400 absolute top-1/2 left-4 transform -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    </div>
+                    <div class="flex items-center justify-center space-x-2 bg-gray-100 p-1 rounded-xl">
+                        <button id="filterAll" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold shadow">全部</button>
+                        <button id="filterSteel" class="filter-btn bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold">鋼鐵</button>
+                        <button id="filterAluminum" class="filter-btn bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold">鋁</button>
+                    </div>
+                </div>
+                <div id="app1Loader" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex flex-col sm:flex-row items-center gap-4">
+                    <p id="app1Status" class="text-sm text-blue-700 flex-grow">
+                        <span class="font-semibold">載入中...</span> 正在讀取關稅規則資料。
+                    </p>
+                </div>
+            </div>
+            <main id="resultsContainer" class="space-y-4 mt-8"></main>
+            <div id="noResults" class="hidden text-center py-16">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <h3 class="mt-2 text-lg font-medium text-gray-900">找不到結果</h3>
+                <p class="mt-1 text-sm text-gray-500">請嘗試使用不同的關鍵字或調整篩選條件。</p>
+            </div>
+             <div id="app1Welcome" class="text-center py-16">
+                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                <h3 class="mt-2 text-lg font-medium text-gray-900">等待資料</h3>
+                <p class="mt-1 text-sm text-gray-500">請點擊上方的「上傳 JSON」按鈕來載入關稅資料。</p>
+            </div>
+        </div>
+
+        <!-- Tab 2: HTSUS API Query Tool Content -->
+        <div id="htsContent" class="hidden">
+            <section class="bg-white border border-gray-200 rounded-xl p-4 md:p-5 mb-6 shadow-sm">
+                 <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-semibold text-gray-900">資料來源:</h2>
+                    <a href="https://hts.usitc.gov/" target="_blank" class="text-sm text-blue-600 hover:underline">USITC Official API (via Netlify Proxy)</a>
+                </div>
+            </section>
+
+            <div class="sticky top-4 z-10 bg-gray-100/80 backdrop-blur-sm p-2 rounded-xl mb-4">
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <div class="relative flex-grow">
+                            <input id="htsSearchInput" type="text" placeholder="輸入英文關鍵字或 HTS 碼 (e.g., copper, 0101.21.00)..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-4 pl-12 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-300" />
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                        </div>
+                        <button id="htsSearchBtn" class="btn btn-primary px-6">搜尋</button>
+                    </div>
+                    <div class="flex items-center gap-2 px-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="show232Only" class="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">僅顯示 232 條款相關項目</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="htsStatusContainer">
+                <div id="htsLoader" class="hidden flex-col items-center justify-center text-center py-10">
+                    <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-4 text-gray-500">正在透過代理查詢 USITC API 資料...</p>
+                </div>
+                <div id="htsWelcomeMessage" class="text-center py-16">
+                     <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.916 17.916 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>
+                    <h3 class="mt-2 text-lg font-medium text-gray-900">即時 HTSUS 查詢</h3>
+                    <p class="mt-1 text-sm text-gray-500">請在上方搜尋框輸入關鍵字，直接查詢美國官方稅則資料庫。</p>
+                </div>
+            </div>
+            <div id="htsResultsContainer" class="space-y-3"></div>
+        </div>
+
+        <!-- Tab 3: Official Sources Content -->
+        <div id="sourcesContent" class="hidden">
+             <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg space-y-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">官方資料庫與主要法規</h2>
+                     <a href="https://hts.usitc.gov/" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors mb-4">
+                        <p class="font-semibold text-blue-600">美國國際貿易委員會 (USITC) - HTSUS 官方查詢網站</p>
+                        <p class="text-sm text-gray-600">查詢所有進口產品HTSUS碼、稅率及法規的最終權威來源。 (目前版本: 2025 HTS Revision 19)</p>
+                    </a>
+                    <a href="https://www.bis.doc.gov/index.php/232-steel" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <p class="font-semibold text-blue-600">商務部工業與安全局 (BIS) - 鋼鐵232專頁</p>
+                        <p class="text-sm text-gray-600">提供所有關於鋼鐵232條款的背景、法規、公告及排除程序的官方入口。</p>
+                    </a>
+                    <a href="https://www.bis.doc.gov/index.php/232-aluminum" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors mt-4">
+                        <p class="font-semibold text-blue-600">商務部工業與安全局 (BIS) - 鋁232專頁</p>
+                        <p class="text-sm text-gray-600">提供所有關於鋁232條款的背景、法規、公告及排除程序的官方入口。</p>
+                    </a>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">最新衍生品公告 (2025/08/18 生效)</h2>
+                    <div class="space-y-4">
+                        <a href="https://content.govdelivery.com/accounts/USDHSCBP/bulletins/3ee1cba" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">CBP 鋼鐵衍生品指引 (CSMS #65936570)</p><p class="text-sm text-gray-600">美國海關暨邊境保衛局發布的官方指引，詳細說明新增鋼鐵衍生品的執行細節。</p></a>
+                        <a href="https://content.govdelivery.com/bulletins/gd/USDHSCBP-3ee1ce7?wgt_ref=USDHSCBP_WIDGET_2" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">CBP 鋁衍生品指引 (CSMS #65936615)</p><p class="text-sm text-gray-600">美國海關暨邊境保衛局發布的官方指引，詳細說明新增鋁衍生品的執行細節。</p></a>
+                        <a href="https://www.federalregister.gov/documents/2025/08/19/2025-15819/adoption-and-procedures-of-the-section-232-steel-and-aluminum-tariff-inclusions-process" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">聯邦公報官方公告</p><p class="text-sm text-gray-600">美國政府在《聯邦公報》上發布的正式法律文件，確認新增407項衍生品清單。</p></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>資料來源：美國海關暨邊境保衛局(CBP)及商務部(DOC)公告；HTSUS資料庫由USITC API提供。</p>
+            <p class="mt-1">本系統僅供參考，最終解釋請以美國官方公告為準。</p>
+            <p class="mt-1">製作者: Johnway</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- GLOBAL ELEMENTS & STATE ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        const contents = { 
+            queryContent: document.getElementById('queryContent'), 
+            htsContent: document.getElementById('htsContent'), 
+            sourcesContent: document.getElementById('sourcesContent') 
+        };
+        // This is no longer needed for App 2 but might be used by App 1's hts-code-link logic
+        let htsAllData = []; 
+
+        // --- APP 1: STEEL/ALUMINUM TARIFFS (DATA-DRIVEN REFACTOR) ---
+        function initializeApp1() {
+            // --- App 1 State & DOM ---
+            let tariffData = []; // Data is now loaded dynamically
+            const searchInput = document.getElementById('searchInput');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const noResults = document.getElementById('noResults');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const fileInput = document.getElementById('tariffFileInput');
+            const statusMessage = document.getElementById('app1Status');
+            const welcomeMessage = document.getElementById('app1Welcome');
+            const loaderUI = document.getElementById('app1Loader');
+            let currentFilter = 'All';
+
+            // --- App 1 Functions ---
+            async function loadTariffRules() {
+                try {
+                    statusMessage.textContent = '正在載入關稅規則...';
+                    statusMessage.classList.remove('text-red-700', 'text-green-700');
+                    statusMessage.classList.add('text-blue-700');
+                    
+                    const response = await fetch('./tariff_rules.json');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    
+                    if (!Array.isArray(data)) {
+                        throw new Error("JSON is not an array.");
+                    }
+                    tariffData = data;
+                    statusMessage.textContent = `成功載入關稅規則，包含 ${tariffData.length} 筆規則。`;
+                    statusMessage.classList.remove('text-blue-700');
+                    statusMessage.classList.add('text-green-700');
+                    loaderUI.classList.remove('bg-blue-50', 'border-blue-200');
+                    loaderUI.classList.add('bg-green-50', 'border-green-200');
+                    
+                    searchInput.disabled = false;
+                    searchInput.placeholder = "輸入中文/英文關鍵字或HTSUS碼 (例如: 鋼管, pipe, 8407)...";
+                    welcomeMessage.classList.add('hidden');
+                    performSearch();
+                } catch (error) {
+                    statusMessage.textContent = `錯誤: 無法載入資料。(${error.message})`;
+                    statusMessage.classList.remove('text-blue-700');
+                    statusMessage.classList.add('text-red-700');
+                    loaderUI.classList.remove('bg-blue-50', 'border-blue-200');
+                    loaderUI.classList.add('bg-red-50', 'border-red-200');
+                }
+            }
+
+            function handleFilterClick(e) {
+                const text = e.currentTarget.textContent;
+                if (text === '全部') currentFilter = 'All';
+                else if (text === '鋼鐵') currentFilter = 'Steel';
+                else if (text === '鋁') currentFilter = 'Aluminum';
+                updateFilterButtons(e.currentTarget);
+                performSearch();
+            }
+
+            function handleHtsCodeClick(e) {
+                if (e.target.classList.contains('hts-code-link')) {
+                    const code = e.target.textContent.trim();
+                    // Always switch to HTS tab and search via API
+                    document.getElementById('tabHts').click(); 
+                    const htsInput = document.getElementById('htsSearchInput');
+                    const htsSearchBtn = document.getElementById('htsSearchBtn');
+                    if (htsInput) {
+                        htsInput.value = code;
+                        htsSearchBtn.click(); // Trigger API search
+                        htsInput.focus();
+                    }
+                }
+            }
+
+            function renderTariffInfo(tariffs) {
+                if (!tariffs) {
+                    tariffs = { sec232: { applicable: true, rate: '50%', note: '此為8/18新增之衍生品關稅 (針對鋼/鋁內容物)' } };
+                }
+                let tariffHtml = '<div class="mt-4 pt-4 border-t border-dashed border-gray-300 space-y-3">';
+                tariffHtml += '<h4 class="text-sm font-bold text-gray-800">關稅適用性分析</h4>';
+                if (tariffs.sec232?.applicable) tariffHtml += `<div class="flex items-start"><div class="flex-shrink-0 w-24 text-xs font-semibold text-red-700 bg-red-100 px-2 py-1 rounded-full text-center">Section 232</div><div class="ml-4"><p class="text-sm font-bold text-red-700">${tariffs.sec232.rate}</p><p class="text-xs text-gray-500">${tariffs.sec232.note}</p></div></div>`;
+                if (tariffs.sec301?.applicable) tariffHtml += `<div class="flex items-start"><div class="flex-shrink-0 w-24 text-xs font-semibold text-yellow-800 bg-yellow-100 px-2 py-1 rounded-full text-center">Section 301</div><div class="ml-4"><p class="text-sm font-bold text-yellow-800">${tariffs.sec301.rate}</p><p class="text-xs text-gray-500">${tariffs.sec301.note}</p></div></div>`;
+                if (tariffs.ad_cvd?.applicable) tariffHtml += `<div class="flex items-start"><div class="flex-shrink-0 w-24 text-xs font-semibold text-purple-800 bg-purple-100 px-2 py-1 rounded-full text-center">AD / CVD</div><div class="ml-4"><p class="text-sm font-bold text-purple-800">高度風險</p><p class="text-xs text-gray-500">${tariffs.ad_cvd.note}</p></div></div>`;
+                tariffHtml += '</div>';
+                return tariffHtml;
+            }
+
+            function renderResults(results) {
+                resultsContainer.innerHTML = ''; 
+                if (tariffData.length === 0) {
+                    welcomeMessage.classList.remove('hidden');
+                    noResults.classList.add('hidden');
+                    return;
+                }
+                welcomeMessage.classList.add('hidden');
+                noResults.classList.toggle('hidden', results.length > 0);
+
+                results.forEach((item, index) => {
+                    const materialClass = item.material.includes('Steel') && item.material.includes('Aluminum') ? 'bg-indigo-100 text-indigo-800' : (item.material.includes('Steel') ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800');
+                    const materialText = item.material.includes('Steel') && item.material.includes('Aluminum') ? '鋼/鋁' : (item.material.includes('Steel') ? '鋼鐵' : '鋁');
+                    let titleTag = item.isDerivative ? `<span class="text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full ml-2">8/18 新增 50%</span>` : '';
+                    const detailsHtml = item.details?.map(detail => `<div class="py-2 px-4 flex items-start border-t border-gray-200 hover:bg-gray-50"><span class="hts-code-link text-sm font-mono text-gray-500 w-32 flex-shrink-0 cursor-pointer">${detail.hts || detail.sub_hts}</span><span class="text-sm text-gray-700">${detail.desc || ''}</span></div>`).join('') || '';
+                    const tariffInfoHtml = renderTariffInfo(item.tariffs);
+                    const card = `<div class="bg-white rounded-xl shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-lg"><div id="header-${index}" class="p-5 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center"><div class="flex-grow"><div class="flex justify-between items-start gap-4"><h2 class="text-lg font-bold text-gray-900">${item.description} ${titleTag}</h2><span class="text-xs font-semibold px-2 py-1 rounded-full ${materialClass} flex-shrink-0 mt-1">${materialText}</span></div><p class="text-sm text-gray-500 mt-2">相關 HTSUS 章節: ${item.chapter}</p></div><svg id="chevron-${index}" class="chevron w-6 h-6 text-gray-400 flex-shrink-0 ml-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></div><div id="details-${index}" class="details-container px-5 pb-5">${detailsHtml}${tariffInfoHtml}</div></div>`;
+                    resultsContainer.innerHTML += card;
+                });
+
+                results.forEach((_, index) => {
+                    const header = document.getElementById(`header-${index}`);
+                    if (header) {
+                        header.addEventListener('click', () => {
+                            document.getElementById(`details-${index}`).classList.toggle('open');
+                            document.getElementById(`chevron-${index}`).classList.toggle('open');
+                        });
+                    }
+                });
+            }
+
+            function performSearch() {
+                if (tariffData.length === 0) {
+                    renderResults([]);
+                    return;
+                }
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const filteredData = tariffData.filter(item => {
+                    const matchesFilter = currentFilter === 'All' || item.material.includes(currentFilter);
+                    if (!matchesFilter) return false;
+                    const matchesMain = item.description.toLowerCase().includes(searchTerm) || item.chapter.toLowerCase().includes(searchTerm);
+                    const matchesDetails = item.details?.some(d => (d.hts || d.sub_hts).toLowerCase().includes(searchTerm) || (d.desc || '').toLowerCase().includes(searchTerm));
+                    return searchTerm === '' || matchesMain || matchesDetails;
+                }).sort((a, b) => a.isDerivative - b.isDerivative);
+                renderResults(filteredData);
+            }
+
+            function updateFilterButtons(activeButton) {
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('bg-blue-500', 'text-white', 'shadow');
+                    btn.classList.add('bg-white', 'text-gray-700');
+                });
+                activeButton.classList.add('bg-blue-500', 'text-white', 'shadow');
+                activeButton.classList.remove('bg-white', 'text-gray-700');
+            }
+
+            // --- App 1 Initialization ---
+            filterButtons.forEach(button => button.addEventListener('click', handleFilterClick));
+            searchInput.addEventListener('input', performSearch);
+            resultsContainer.addEventListener('click', handleHtsCodeClick);
+            
+            // 自動載入 tariff_rules.json
+            loadTariffRules();
+            performSearch(); // Initial render (will show welcome message)
+        }
+
+        // --- APP 2: HTSUS API TARIFF DATABASE ---
+        function initializeHtsApiApp() {
+            // --- App 2 DOM ---
+            const searchInput = document.getElementById('htsSearchInput');
+            const searchBtn = document.getElementById('htsSearchBtn');
+            const resultsContainer = document.getElementById('htsResultsContainer');
+            const loader = document.getElementById('htsLoader');
+            const welcomeMessage = document.getElementById('htsWelcomeMessage');
+            const statusContainer = document.getElementById('htsStatusContainer');
+
+            // --- 232條款和稅率計算函數 ---
+            function check232Applicability(item, allItems) {
+                const is232Related = item.footnotes?.some(f => 
+                    f.value?.includes('subchapter III, chapter 99') ||
+                    f.value?.includes('note 16') || // 鋼鐵
+                    f.value?.includes('note 19')    // 鋁
+                ) ?? false;
+
+                if (!is232Related && item.statisticalSuffix) {
+                    const parentHts = item.htsno.split('.').slice(0, -1).join('.');
+                    const parentItem = allItems.find(i => i.htsno === parentHts);
+                    if (parentItem) {
+                        return check232Applicability(parentItem, allItems);
+                    }
+                }
+                return is232Related;
+            }
+
+            function parseRate(rate) {
+                if (!rate || rate === 'Free' || rate === '') return 0;
+                const match = rate.match(/(\d+\.?\d*)/);
+                return match ? parseFloat(match[0]) : 0;
+            }
+
+            // 檢查是否符合232條款
+            function check232Applicability(item, allItems) {
+                const is232Related = item.footnotes?.some(f => 
+                    f.value?.includes('subchapter III, chapter 99') ||
+                    f.value?.includes('note 16') || // 鋼鐵
+                    f.value?.includes('note 19')    // 鋁
+                ) ?? false;
+
+                // 如果當前項目不相關，檢查父項
+                if (!is232Related && item.statisticalSuffix) {
+                    const parentHts = item.htsno.split('.').slice(0, -1).join('.');
+                    const parentItem = allItems.find(i => i.htsno === parentHts);
+                    if (parentItem) {
+                        return check232Applicability(parentItem, allItems);
+                    }
+                }
+                return is232Related;
+            }
+
+            // 在註腳中查找99章引用和232條款相關說明
+            function findChapter99References(footnotes, column) {
+                const refs = [];
+                let has232Note = false;
+
+                footnotes?.forEach(f => {
+                    if (f.columns.includes(column)) {
+                        // 檢查是否包含232條款相關說明
+                        if (f.value.includes('note 16') || 
+                            f.value.includes('subchapter III, chapter 99')) {
+                            has232Note = true;
+                        }
+                        // 查找99章引用
+                        const matches = f.value.match(/99\d{2}\.\d{2}\.\d{2}/g) || [];
+                        refs.push(...matches);
+                    }
+                });
+
+                return {
+                    refs: refs,
+                    has232Note: has232Note
+                };
+            }
+
+            function parseChapter99Rate(rateText) {
+                if (!rateText) return 0;
+                // 優先處理70%的情況
+                if (rateText === '70%') {
+                    console.log('Found exact 70% rate');
+                    return 70;
+                }
+                if (rateText.includes('applicable subheading + 25%') || 
+                    rateText.includes('The duty provided in the applicable subheading + 25%')) {
+                    return 25;
+                }
+                const match = rateText.match(/(\d+\.?\d*)%/);
+                return match ? parseFloat(match[1]) : 0;
+            }
+
+            function calculateTotalRates(item, allItems) {
+                console.log('Calculating rates for:', item.htsno);
+                if (!Array.isArray(allItems)) return { generalTotal: 0, otherTotal: 0 };
+                
+                const baseGeneralRate = parseRate(item.general);
+                const baseOtherRate = parseRate(item.other);
+                
+                console.log('Base rates - General:', baseGeneralRate, 'Other:', baseOtherRate);
+                
+                // 分別獲取general和other列的99章引用
+                const { refs: generalRefs, has232Note: hasGeneral232Note } = findChapter99References(item.footnotes, 'general');
+                const { refs: otherRefs } = findChapter99References(item.footnotes, 'other');
+                
+                console.log('Found references - General:', generalRefs, '232 Note:', hasGeneral232Note);
+                console.log('Found references - Other:', otherRefs);
+
+                let additionalGeneralRate = 0;
+                let additionalOtherRate = 0;
+
+                // 處理general列的額外稅率
+                generalRefs.forEach(ref => {
+                    console.log('Processing general ref:', ref);
+                    const chapter99Item = allItems.find(i => i.htsno === ref);
+                    console.log('Found chapter99 item:', chapter99Item);
+                    if (chapter99Item?.general) {
+                        // 檢查是否包含+25%的表述
+                        if (chapter99Item.general.includes('applicable subheading + 25%') ||
+                            chapter99Item.general.includes('The duty provided in the applicable subheading + 25%')) {
+                            console.log('Found +25% rate in general');
+                            additionalGeneralRate = Math.max(additionalGeneralRate, 25); // 使用最高的稅率
+                        } else {
+                            const rate = parseChapter99Rate(chapter99Item.general);
+                            additionalGeneralRate = Math.max(additionalGeneralRate, rate);
+                        }
+                    }
+                });
+
+                // 處理other列的額外稅率
+                otherRefs.forEach(ref => {
+                    console.log('Processing other ref:', ref);
+                    const chapter99Item = allItems.find(i => i.htsno === ref);
+                    console.log('Found chapter99 item for other:', chapter99Item);
+                    if (chapter99Item?.other) {
+                        const rate = parseChapter99Rate(chapter99Item.other);
+                        console.log('Found additional other rate:', rate);
+                        additionalOtherRate += rate;
+                    }
+                });
+
+                console.log('Additional rates - General:', additionalGeneralRate, 'Other:', additionalOtherRate);
+
+                // 計算最終稅率
+                let totalGeneralRate = baseGeneralRate;
+                let totalOtherRate = baseOtherRate;
+
+                if (hasGeneral232Note) {
+                    // 尋找 9903.91.01 (general列25%稅率)
+                    const general232Item = allItems.find(i => i.htsno === '9903.91.01');
+                    if (general232Item) {
+                        totalGeneralRate = 25;
+                    }
+
+                    // 尋找 9903.90.09 (other列70%稅率)
+                    const other232Item = allItems.find(i => i.htsno === '9903.90.09');
+                    if (other232Item) {
+                        totalOtherRate = baseOtherRate + 70;
+                    }
+                }
+
+                console.log('Final rates - General:', totalGeneralRate, 'Other:', totalOtherRate);
+
+                console.log('Final rates - General:', totalGeneralRate, 'Other:', totalOtherRate);
+
+                // 返回計算結果
+                return {
+                    generalTotal: totalGeneralRate,
+                    otherTotal: totalOtherRate,
+                    hasAdditionalDuty: additionalGeneralRate > 0 || additionalOtherRate > 0
+                };
+
+                return {
+                    generalTotal: baseGeneralRate + additionalGeneralRate,
+                    otherTotal: baseOtherRate + additionalOtherRate
+                };
+            }
+
+            function formatRate(rate) {
+                return rate === 0 ? 'Free' : rate + '%';
+            }
+
+            // --- App 2 Functions ---
+            function setLoading(isLoading) {
+                if (isLoading) {
+                    loader.classList.remove('hidden');
+                    loader.classList.add('flex');
+                    welcomeMessage.classList.add('hidden');
+                    resultsContainer.innerHTML = '';
+                } else {
+                    loader.classList.add('hidden');
+                    loader.classList.remove('flex');
+                }
+            }
+
+            function esc(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+            
+            function usitcLink(code){ return `https://hts.usitc.gov/search?query=${encodeURIComponent(code)}`; }
+
+            // 檢查是否符合 232 條款
+            function check232Applicability(item, allItems) {
+                // 檢查當前項目的註腳
+                const is232Related = item.footnotes?.some(f => 
+                    f.value?.includes('subchapter III, chapter 99') ||
+                    f.value?.includes('note 16') || // 鋼鐵
+                    f.value?.includes('note 19')    // 鋁
+                ) ?? false;
+
+                // 如果當前項目不相關，檢查父項
+                if (!is232Related && item.statisticalSuffix) {
+                    const parentHts = item.htsno.split('.').slice(0, -1).join('.');
+                    const parentItem = allItems.find(i => i.htsno === parentHts);
+                    if (parentItem) {
+                        return check232Applicability(parentItem, allItems);
+                    }
+                }
+
+                return is232Related;
+            }
+
+            // 解析稅率字符串
+            function parseRate(rate) {
+                if (!rate || rate === 'Free' || rate === '') return 0;
+                const match = rate.match(/(\d+\.?\d*)/);
+                return match ? parseFloat(match[0]) : 0;
+            }
+
+            // 查找關聯的 99 章稅率
+            function findChapter99Rate(footnotes, allItems, rateType) {
+                let additionalRate = 0;
+                
+                // 在註腳中查找 99 章引用
+                footnotes?.forEach(f => {
+                    if (f.columns.includes(rateType)) {
+                        const htsMatch = f.value.match(/99\d{2}\.\d{2}\.\d{2}/);
+                        if (htsMatch && Array.isArray(allItems)) {  // 確保 allItems 是陣列
+                            const chapter99Item = allItems.find(item => item.htsno === htsMatch[0]);
+                            if (chapter99Item) {
+                                // 解析 99 章的稅率
+                                if (chapter99Item[rateType]?.includes('+')) {
+                                    const rateMatch = chapter99Item[rateType].match(/\+\s*(\d+\.?\d*)%/);
+                                    if (rateMatch) {
+                                        additionalRate += parseFloat(rateMatch[1]);
+                                    }
+                                } else {
+                                    additionalRate += parseRate(chapter99Item[rateType]);
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                return additionalRate;
+            }
+
+            // 計算總稅率
+            function calculateTotalRates(item, allItems) {
+                // 基本稅率
+                const baseGeneralRate = parseRate(item.general);
+                const baseOtherRate = parseRate(item.other);
+
+                // 額外稅率（來自 99 章）
+                const additionalGeneralRate = findChapter99Rate(item.footnotes, allItems, 'general');
+                const additionalOtherRate = findChapter99Rate(item.footnotes, allItems, 'other');
+
+                return {
+                    generalTotal: baseGeneralRate + additionalGeneralRate,
+                    otherTotal: baseOtherRate + additionalOtherRate
+                };
+            }
+
+            // 格式化稅率顯示
+            function formatRate(rate) {
+                return rate === 0 ? 'Free' : rate + '%';
+            }
+
+            function renderResults(items) {
+                resultsContainer.innerHTML = '';
+                welcomeMessage.classList.add('hidden');
+
+                if (!items || items.length === 0) {
+                    resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">找不到符合條件的結果，請嘗試其他關鍵字。</p></div>`;
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white border border-gray-200 rounded-lg p-4 transition-all hover:bg-gray-50 hover:border-blue-300';
+                    const indentPx = (Number(item.indent) || 0) * 20;
+                    
+                    // 檢查232條款相關性和計算總稅率
+                    const itemIs232Related = check232Applicability(item, items);
+                    const { generalTotal: itemGeneralTotal, otherTotal: itemOtherTotal } = calculateTotalRates(item, items);
+                    
+                    // Highlight search term
+                    const searchTerm = searchInput.value.trim();
+                    let descriptionHtml = esc(item.description || '');
+                    if (searchTerm) {
+                         const regex = new RegExp(searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+                         descriptionHtml = descriptionHtml.replace(regex, `<mark class="bg-yellow-200 px-1 rounded">${searchTerm}</mark>`);
+                    }
+
+                    // 檢查是否符合232條款並計算稅率
+                    const is232Related = check232Applicability(item, window.currentSearchResults);
+                    const { generalTotal, otherTotal } = calculateTotalRates(item, window.currentSearchResults);
+                    
+                    // 格式化稅率顯示
+                    function formatRate(rate) {
+                        return rate === 0 ? 'Free' : rate + '%';
+                    }
+
+                    // 處理稅率繼承
+                    function findParentRate(items, currentItem) {
+                        if (currentItem.general && currentItem.general !== '') {
+                            return currentItem.general;
+                        }
+                        
+                        // 找出所有可能的父項
+                        const currentIndent = parseInt(currentItem.indent || '0');
+                        const parentItems = items.filter(i => 
+                            i.htsno === currentItem.htsno.split('.').slice(0, -1).join('.') && 
+                            parseInt(i.indent || '0') < currentIndent
+                        );
+
+                        // 按縮排層級排序，找到最近的父項
+                        const parent = parentItems.sort((a, b) => 
+                            parseInt(b.indent || '0') - parseInt(a.indent || '0')
+                        )[0];
+
+                        return parent ? (parent.general || '') : '';
+                    }
+
+                    // 獲取實際稅率
+                    const actualRate = item.general || findParentRate(window.currentSearchResults || [], item);
+
+                    // 處理註腳
+                    const footnotes = item.footnotes?.map((f, footnoteIndex) => {
+                        const is232Related = f.value?.includes('232') || 
+                                          f.value?.includes('9903.80') || 
+                                          f.value?.includes('9903.85');
+                        
+                        // 尋找HTSUS代碼
+                        const htsMatches = f.value.match(/99\d{2}\.\d{2}\.\d{2}/g) || [];
+                        let processedValue = f.value;
+                        let lastIndex = 0;
+                        let parts = [];
+                        
+                        // 更精確的替換HTSUS代碼
+                        htsMatches.forEach((code, codeIndex) => {
+                            const codeIndex2 = f.value.indexOf(code, lastIndex);
+                            if (codeIndex2 !== -1) {
+                                // 添加代碼前的文字
+                                if (codeIndex2 > lastIndex) {
+                                    parts.push(esc(f.value.substring(lastIndex, codeIndex2)));
+                                }
+                                
+                                // 生成唯一ID
+                                const uniqueId = `footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}`;
+                                
+                                // 添加連結
+                                parts.push(`<a href="#" class="text-blue-600 hover:text-blue-800 footnote-link" data-hts="${code}" data-detail-id="${uniqueId}">${code}</a>`);
+                                
+                                lastIndex = codeIndex2 + code.length;
+                            }
+                        });
+                        
+                        // 添加剩餘的文字
+                        if (lastIndex < f.value.length) {
+                            parts.push(esc(f.value.substring(lastIndex)));
+                        }
+                        
+                        processedValue = parts.join('');
+
+                        return `
+                            <div class="footnote-container relative">
+                                <div class="text-xs ${is232Related ? 'text-red-600 font-medium' : 'text-gray-600'} mt-1">
+                                    <span class="font-medium">${esc(f.columns.join(', '))}:</span> 
+                                    ${is232Related ? '🔔 ' : ''}${processedValue}
+                                </div>
+                                ${htsMatches.map((code, codeIndex) => `
+                                    <div id="footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}"
+                                         class="footnote-details mt-2 ml-4 hidden">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }).join('') || '';
+
+                    // 處理單位
+                    const units = item.units?.length 
+                        ? `<div class="text-sm text-gray-600 mt-2">單位: ${esc(item.units.join(', '))}</div>` 
+                        : '';
+
+                    card.innerHTML = `
+                        <div style="padding-left:${indentPx}px;">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-grow">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p class="font-semibold text-lg">
+                                            <a class="text-blue-600 hover:text-blue-800" href="${usitcLink(item.htsno)}" target="_blank" rel="noopener noreferrer">
+                                                ${esc(item.htsno)}
+                                                ${item.statisticalSuffix ? `<span class="text-gray-500 text-sm">.${esc(item.statisticalSuffix)}</span>` : ''}
+                                            </a>
+                                        </p>
+                                        ${check232Applicability(item, window.currentSearchResults) ? `
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                232條款相關項目
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                    <p class="text-gray-800 mt-1">${descriptionHtml}</p>
+                                </div>
+                                <div class="text-xs bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                                    縮排等級: ${esc(item.indent || '0')}
+                                </div>
+                            </div>
+
+                            ${units}
+
+                            <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                    <div>
+                                        <p class="font-medium text-gray-500">第一欄 (普通)</p>
+                                        <p class="text-gray-700">
+                                            ${esc(actualRate || '—')}
+                                            ${item.general === '' ? '<span class="text-xs text-gray-500">(繼承自父項)</span>' : ''}
+                                            ${(itemIs232Related && itemGeneralTotal > 0) ? 
+                                                `<span class="text-xs text-red-600 ml-2">
+                                                    → ${formatRate(itemGeneralTotal)} 
+                                                    (含232條款)
+                                                </span>` 
+                                                : ''}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-500">第一欄 (特殊)</p>
+                                        <p class="text-gray-700">${esc(item.special ?? '—')}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-500">第二欄</p>
+                                        <p class="text-gray-700">
+                                            ${esc(item.other ?? item.col2 ?? '—')}
+                                            ${(itemIs232Related && itemOtherTotal > parseRate(item.other)) ? 
+                                                `<span class="text-xs text-red-600 ml-2">
+                                                    → ${formatRate(itemOtherTotal)} 
+                                                    (含232條款)
+                                                </span>` 
+                                                : ''}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                ${item.quotaQuantity ? 
+                                    `<div class="mt-2 text-sm">
+                                        <p class="font-medium text-gray-500">配額數量</p>
+                                        <p class="text-gray-700">${esc(item.quotaQuantity)}</p>
+                                    </div>` : ''
+                                }
+
+                                ${item.additionalDuties ? 
+                                    `<div class="mt-2 text-sm">
+                                        <p class="font-medium text-gray-500">額外關稅</p>
+                                        <p class="text-gray-700">${esc(item.additionalDuties)}</p>
+                                    </div>` : ''
+                                }
+
+                                ${footnotes ? 
+                                    `<div class="mt-3 pt-3 border-t border-dashed border-gray-200">
+                                        <p class="font-medium text-gray-500 text-sm mb-1">註腳說明</p>
+                                        ${footnotes}
+                                    </div>` : ''
+                                }
+                            </div>
+                        </div>`;
+                    fragment.appendChild(card);
+                });
+                resultsContainer.appendChild(fragment);
+            }
+
+            async function performApiSearch() {
+                const searchTerm = searchInput.value.trim();
+                const show232Only = document.getElementById('show232Only').checked;
+
+                if (searchTerm.length < 2 && !show232Only) {
+                    resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">請輸入至少 2 個字元以進行搜尋${show232Only ? '，或選擇僅顯示 232 條款相關項目' : ''}。</p></div>`;
+                    return;
+                }
+
+                setLoading(true);
+
+                // *** MODIFIED FOR NETLIFY PROXY ***
+                const apiUrl = `/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(searchTerm)}`;
+
+                try {
+                    // We no longer need the proxy URL for the fetch call itself
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                         const errorText = await response.text();
+                        throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${errorText}`);
+                    }
+                    const data = await response.json();
+                    // 確保 data.results 是陣列
+                    if (!Array.isArray(data.results)) {
+                        throw new Error('API 回傳的資料格式不正確');
+                    }
+                    
+                    // 儲存所有結果
+                    window.currentSearchResults = data.results;
+                    renderResults(data.results);
+                } catch (error) {
+                    console.error("API Search Error:", error);
+                    resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-red-600">查詢時發生錯誤</p><p class="text-sm text-gray-500 mt-1">${error.message}</p></div>`;
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // --- App 2 Initialization ---
+            searchBtn.addEventListener('click', performApiSearch);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    performApiSearch();
+                }
+            });
+
+            // 處理註腳中HTSUS代碼的點擊事件
+            let lastClickedLink = null;
+            let clickTimer = null;
+
+            document.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('footnote-link')) {
+                    e.preventDefault();
+                    const htsCode = e.target.dataset.hts;
+                    const detailId = e.target.dataset.detailId;
+                    const detailsContainer = document.getElementById(detailId);
+                    
+                    if (!detailsContainer) return;
+
+                    // 關閉之前打開的容器（如果有的話）
+                    if (lastClickedLink && lastClickedLink !== e.target) {
+                        const lastDetailId = lastClickedLink.dataset.detailId;
+                        const lastContainer = document.getElementById(lastDetailId);
+                        if (lastContainer) {
+                            lastContainer.classList.add('hidden');
+                        }
+                    }
+                    
+                    // 更新最後點擊的連結
+                    lastClickedLink = e.target;
+
+                    // 切換當前容器的顯示狀態
+                    if (detailsContainer.classList.contains('hidden')) {
+                        detailsContainer.classList.remove('hidden');
+                        detailsContainer.innerHTML = '<div class="text-gray-500 text-sm py-2">搜尋中...</div>';
+                        
+                        try {
+                            const response = await fetch(`/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(htsCode)}`);
+                            if (!response.ok) throw new Error('搜尋失敗');
+                            
+                            const data = await response.json();
+                            if (!data.results?.length) throw new Error('找不到相關資訊');
+                            
+                            const result = data.results[0];
+                            detailsContainer.innerHTML = `
+                                <div class="bg-gray-50 rounded-lg p-3 text-sm border border-gray-200">
+                                    <div class="flex justify-between items-start">
+                                        <div class="font-medium text-gray-900">${result.description || '無描述'}</div>
+                                        <button class="text-gray-400 hover:text-gray-600 close-details" 
+                                                data-hts="${htsCode}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2 space-y-1 text-gray-600">
+                                        ${result.general ? `<div>第一欄 (普通): ${result.general}</div>` : ''}
+                                        ${result.special ? `<div>第一欄 (特殊): ${result.special}</div>` : ''}
+                                        ${result.other ? `<div>第二欄: ${result.other}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        } catch (error) {
+                            detailsContainer.innerHTML = `
+                                <div class="text-red-500 text-sm py-2 bg-red-50 rounded-lg px-3">
+                                    ${error.message}
+                                </div>
+                            `;
+                        }
+                    } else {
+                        detailsContainer.classList.add('hidden');
+                    }
+                }
+
+                // 處理關閉按鈕的點擊
+                if (e.target.closest('.close-details')) {
+                    const htsCode = e.target.closest('.close-details').dataset.hts;
+                    const detailsContainer = document.getElementById(`footnote-details-${htsCode.replace(/\./g, '-')}`);
+                    if (detailsContainer) {
+                        detailsContainer.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+
+        // --- MAIN APP INITIALIZATION ---
+        function initializeApp() {
+            tabs.forEach(tab => tab.addEventListener('click', (e) => {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                });
+                const activeTab = e.currentTarget;
+                activeTab.classList.add('active');
+                activeTab.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                
+                Object.values(contents).forEach(content => content.style.display = 'none');
+                const contentId = activeTab.id.replace('tab', '').toLowerCase() + 'Content';
+                contents[contentId].style.display = 'block';
+            }));
+            
+            initializeApp1();
+            initializeHtsApiApp(); // Changed from initializeHtsAppV2
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+
+</body>
+</html>
