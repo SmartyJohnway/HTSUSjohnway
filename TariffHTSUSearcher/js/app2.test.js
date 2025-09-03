@@ -44,7 +44,7 @@ describe('performApiSearch', () => {
     assert.equal(fetchCalled, false);
   });
 
-  test('filters results to 232 items when show232Only is true', async () => {
+    test('filters results to 232 items when show232Only is true', async () => {␊
     const { performApiSearch } = initializeHtsApiApp();
     elements.show232Only.checked = true;
     elements.htsSearchInput.value = 'ab';
@@ -71,5 +71,23 @@ describe('performApiSearch', () => {
     assert.equal(fetchCalled, true);
     assert.equal(global.window.currentSearchResults.length, 1);
     assert.equal(global.window.currentSearchResults[0].htsno, '1111.11.11');
+  });
+
+  test('surfaces error message when response is HTML', async () => {
+    const { performApiSearch } = initializeHtsApiApp();
+    elements.htsSearchInput.value = 'ab';
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'text/html' },
+      text: async () => '<html></html>'
+    });
+
+    await assert.doesNotReject(performApiSearch);
+    assert.match(
+      elements.htsResultsContainer.innerHTML,
+      /Unexpected content-type: text\/html/
+    );
   });
 });

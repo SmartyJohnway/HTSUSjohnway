@@ -380,33 +380,33 @@ function initializeHtsApiApp() {
 
         setLoading(true);
 
-        // *** MODIFIED FOR NETLIFY PROXY ***
-        const apiUrl = `/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(searchTerm)}`;
+        // *** MODIFIED FOR NETLIFY PROXY ***␊
+        const apiBaseUrl = (typeof window !== 'undefined' && window.API_BASE_URL)
+            ? window.API_BASE_URL
+            : '/.netlify/functions/hts-proxy';
+        const proxyUrl = `${apiBaseUrl}?keyword=${encodeURIComponent(searchTerm)}`;
+        const directUrl = `https://hts.usitc.gov/reststop/search?keyword=${encodeURIComponent(searchTerm)}`;
 
         try {
-            const response = await fetch(apiUrl);
-            const contentType = response.headers.get('content-type') || '';
-            const isJson = contentType.includes('application/json');
-            const body = isJson ? await response.json() : await response.text();
-
-            if (!response.ok) {
-                if (isJson) {
-                    throw new Error(body.error || `代理請求失敗: ${response.status} ${response.statusText}`);
+            let data;
+            try {
+                const response = await fetch(proxyUrl);
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok || !contentType.includes('application/json')) {
+                    throw new Error('Proxy returned non-JSON');
                 }
-                if (response.status === 404) {
-                    throw new Error('伺服器無法找到 API 函式 (404)');
-                } else if (response.status === 500) {
-                    throw new Error('後端系統錯誤 (500)');
+                data = await response.json();
+            } catch (proxyError) {
+                const response = await fetch(directUrl, {
+                    headers: { 'User-Agent': 'Tariff-Query-App/1.0' }
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok || !contentType.includes('application/json')) {
+                    throw new Error('查詢服務暫時無法使用，請稍後再試');
                 }
-                throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${body}`);
+                const fallbackData = await response.json();
+                data = { results: Array.isArray(fallbackData) ? fallbackData : [] };
             }
-
-            if (!isJson) {
-                console.error('Unexpected content-type:', contentType, 'Body:', body);
-                throw new Error(`Unexpected content-type: ${contentType}`);
-            }
-
-            const data = body;
             // 確保 data.results 是陣列
             if (!Array.isArray(data.results)) {
                 throw new Error('API 回傳的資料格式不正確');
@@ -418,13 +418,13 @@ function initializeHtsApiApp() {
             // 儲存所有結果
             window.currentSearchResults = filteredResults;
             renderResults(filteredResults);
-        } catch (error) {
-            console.error("API Search Error:", error);
-            resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-red-600">查詢時發生錯誤</p><p class="text-sm text-gray-500 mt-1">${error.message}</p></div>`;
-        } finally {
-            setLoading(false);
-        }
-    }
+        } catch (error) {␊
+            console.error("API Search Error:", error);␊
+            resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-red-600">查詢服務暫時無法使用，請稍後再試。</p><p class="text-sm text-gray-500 mt-1">${error.message}</p></div>`;
+        } finally {␊
+            setLoading(false);␊
+        }␊
+    }␊
 
     // --- App 2 Initialization ---
     searchBtn.addEventListener('click', performApiSearch);

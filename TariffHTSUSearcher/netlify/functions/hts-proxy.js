@@ -9,6 +9,10 @@ const log = (...args) => {
 };
 
 exports.handler = async function(event, context) {
+  // Log incoming request details for debugging
+  log('Incoming URL:', event.rawUrl || event.path);
+  log('Incoming params:', event.queryStringParameters);
+
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
@@ -30,6 +34,8 @@ exports.handler = async function(event, context) {
 
   // The target API endpoint
   const API_ENDPOINT = `https://hts.usitc.gov/reststop/search?keyword=${encodeURIComponent(keyword)}`;
+
+  log('Requesting API endpoint:', API_ENDPOINT);
 
   try {
     // Make the actual request from the server-side function to the USITC API
@@ -80,6 +86,7 @@ exports.handler = async function(event, context) {
   } catch (error) {
     // Handle any network errors during the fetch
     console.error('Proxy Error:', error);
+    log('Error during fetch:', { endpoint: API_ENDPOINT, params: event.queryStringParameters, message: error.message });
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

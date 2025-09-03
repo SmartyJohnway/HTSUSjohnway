@@ -1,27 +1,14 @@
-# This is a configuration file for Netlify.
-# It tells Netlify how to build and deploy your site, including where to find serverless functions.
-# Create this file in the root directory of your project.
+# Netlify configuration for HTSUS Tariff searcher
 
 [build]
-  # Run all commands from the TariffHTSUSearcher subdirectory, which
-  # contains the site's source code and generated assets.
-  base = "TariffHTSUSearcher"
-
-  # This project is a simple static site, so there is no build step.
-  # The command is kept for clarity and future expansion.
+  base = "."
   command = "echo 'No build command required'"
-
-  # Publish the base directory itself.
   publish = "."
 
 [functions]
-  # This explicitly tells Netlify where to find your serverless functions.␊
-  directory = "TariffHTSUSearcher/netlify/functions/"
-
-  # This specifies the Node.js runtime version.
-  # Using a recent LTS (Long-Term Support) version is recommended.
- node_bundler = "esbuild"
-  included_files = ["TariffHTSUSearcher/node_modules/node-fetch/**"]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  included_files = ["node_modules/node-fetch/**"]
 
 [[redirects]]
 from = "/*"
