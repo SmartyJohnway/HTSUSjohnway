@@ -223,10 +223,10 @@ function initializeHtsApiApp() {
             const actualRate = item.general || findParentRate(window.currentSearchResults || [], item);
 
             // 處理註腳
-            const footnotes = item.footnotes?.map((f, footnoteIndex) => {␊
+            const footnotes = item.footnotes?.map((f, footnoteIndex) => {
                 const is232Footnote = f.value?.includes('232') ||
                                   f.value?.includes('9903.80') ||
-                                  f.value?.includes('9903.85');␊
+                                  f.value?.includes('9903.85');
                                                   
                 // 尋找HTSUS代碼
                 const htsMatches = f.value.match(/99\d{2}\.\d{2}\.\d{2}/g) || [];
@@ -260,13 +260,13 @@ function initializeHtsApiApp() {
                 
                 processedValue = parts.join('');
 
-                return `
-                    <div class="footnote-container relative">
-                        <div class="text-xs ${is232Related ? 'text-red-600 font-medium' : 'text-gray-600'} mt-1">
-                            <span class="font-medium">${esc(f.columns.join(', '))}:</span> 
-                            ${is232Related ? '🔔 ' : ''}${processedValue}
-                        </div>
-                        ${htsMatches.map((code, codeIndex) => `
+                return `␊
+                    <div class="footnote-container relative">␊
+                        <div class="text-xs ${is232Footnote ? 'text-red-600 font-medium' : 'text-gray-600'} mt-1">
+                            <span class="font-medium">${esc(f.columns.join(', '))}:</span>
+                            ${is232Footnote ? '🔔 ' : ''}${processedValue}
+                        </div>␊
+                        ${htsMatches.map((code, codeIndex) => `␊
                             <div id="footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}"
                                  class="footnote-details mt-2 ml-4 hidden">
                             </div>
