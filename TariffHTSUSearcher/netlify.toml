@@ -1,7 +1,7 @@
 # Netlify configuration for HTSUS Tariff searcher
 
 [build]
-  base = "."
+  base    = "TariffHTSUSearcher"   # path within the repo
   command = "echo 'No build command required'"
   publish = "."
 
@@ -14,6 +14,3 @@
 from = "/*"
 to = "/index.html"
 status = 200
-
-
-
