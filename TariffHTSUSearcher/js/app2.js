@@ -380,7 +380,7 @@ function initializeHtsApiApp() {
 
         setLoading(true);
 
-        // *** MODIFIED FOR NETLIFY PROXY ***␊
+        // *** MODIFIED FOR NETLIFY PROXY ***
         const apiBaseUrl = (typeof window !== 'undefined' && window.API_BASE_URL)
             ? window.API_BASE_URL
             : '/.netlify/functions/hts-proxy';
@@ -418,13 +418,13 @@ function initializeHtsApiApp() {
             // 儲存所有結果
             window.currentSearchResults = filteredResults;
             renderResults(filteredResults);
-        } catch (error) {␊
-            console.error("API Search Error:", error);␊
+        } catch (error) {
+            console.error("API Search Error:", error);
             resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-red-600">查詢服務暫時無法使用，請稍後再試。</p><p class="text-sm text-gray-500 mt-1">${error.message}</p></div>`;
-        } finally {␊
-            setLoading(false);␊
-        }␊
-    }␊
+        } finally {
+            setLoading(false);
+        }
+    }
 
     // --- App 2 Initialization ---
     searchBtn.addEventListener('click', performApiSearch);

@@ -44,7 +44,7 @@ describe('performApiSearch', () => {
     assert.equal(fetchCalled, false);
   });
 
-    test('filters results to 232 items when show232Only is true', async () => {␊
+    test('filters results to 232 items when show232Only is true', async () => {
     const { performApiSearch } = initializeHtsApiApp();
     elements.show232Only.checked = true;
     elements.htsSearchInput.value = 'ab';

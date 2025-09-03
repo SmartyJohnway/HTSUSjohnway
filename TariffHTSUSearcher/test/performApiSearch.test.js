@@ -46,9 +46,9 @@ global.fetch = async () => ({
 (async () => {
   try {
     await performApiSearch();
-    const html = elements.htsResultsContainer.innerHTML;␊
+    const html = elements.htsResultsContainer.innerHTML;
     assert(html.includes('查詢服務暫時無法使用，請稍後再試。'));
-    assert(!html.includes('<html>'));␊
+    assert(!html.includes('<html>'));
     console.log('performApiSearch non-JSON response test passed');
   } catch (err) {
     console.error(err);
