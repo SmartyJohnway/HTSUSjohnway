@@ -198,21 +198,12 @@ function initializeHtsApiApp() {
                  descriptionHtml = descriptionHtml.replace(regex, `<mark class="bg-yellow-200 px-1 rounded">${searchTerm}</mark>`);
             }
 
-            // 檢查是否符合232條款並計算稅率
-            const is232Related = check232Applicability(item, window.currentSearchResults);
-            const { generalTotal, otherTotal } = calculateTotalRates(item, window.currentSearchResults);
-            
-            // 格式化稅率顯示
-            function formatRate(rate) {
-                return rate === 0 ? 'Free' : rate + '%';
-            }
-
             // 處理稅率繼承
             function findParentRate(items, currentItem) {
                 if (currentItem.general && currentItem.general !== '') {
                     return currentItem.general;
                 }
-                
+
                 // 找出所有可能的父項
                 const currentIndent = parseInt(currentItem.indent || '0');
                 const parentItems = items.filter(i => 
@@ -232,11 +223,11 @@ function initializeHtsApiApp() {
             const actualRate = item.general || findParentRate(window.currentSearchResults || [], item);
 
             // 處理註腳
-            const footnotes = item.footnotes?.map((f, footnoteIndex) => {
-                const is232Related = f.value?.includes('232') || 
-                                  f.value?.includes('9903.80') || 
-                                  f.value?.includes('9903.85');
-                
+            const footnotes = item.footnotes?.map((f, footnoteIndex) => {␊
+                const is232Footnote = f.value?.includes('232') ||
+                                  f.value?.includes('9903.80') ||
+                                  f.value?.includes('9903.85');␊
+                                                  
                 // 尋找HTSUS代碼
                 const htsMatches = f.value.match(/99\d{2}\.\d{2}\.\d{2}/g) || [];
                 let processedValue = f.value;
@@ -401,12 +392,16 @@ function initializeHtsApiApp() {
                 const errorText = await response.text();
                 throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${errorText}`);
             }
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const bodyText = await response.text();
+                throw new Error(`Unexpected content-type: ${contentType}. ${bodyText}`);
+            }
             const data = await response.json();
             // 確保 data.results 是陣列
             if (!Array.isArray(data.results)) {
                 throw new Error('API 回傳的資料格式不正確');
-            }
-            
+            }            
             // 儲存所有結果
             window.currentSearchResults = data.results;
             renderResults(data.results);
