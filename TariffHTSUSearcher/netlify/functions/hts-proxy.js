@@ -8,14 +8,14 @@ const log = (...args) => {
   }
 };
 
-exports.handler = async function(event, context) {
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers: { Allow: 'GET' },
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
-  }
+exports.handler = async function(event, context) {␊
+  if (event.httpMethod !== 'GET') {␊
+    return {␊
+      statusCode: 405,␊
+      headers: { Allow: 'GET', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Method Not Allowed' })␊
+    };␊
+  }␊
   // Get the 'keyword' from the query string parameters of the request
   const keyword = event.queryStringParameters.keyword;
 
@@ -23,6 +23,7 @@ exports.handler = async function(event, context) {
   if (!keyword) {
     return {
       statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Missing keyword parameter' }),
     };
   }
@@ -41,11 +42,13 @@ exports.handler = async function(event, context) {
     // Check if the API response is successful
     if (!response.ok) {
       const errorBody = await response.text();
-      return { 
-        statusCode: response.status, 
-        body: `API Error: ${response.statusText}. Details: ${errorBody}` 
+      return {
+        statusCode: response.status,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: `API Error: ${response.statusText}. Details: ${errorBody}` })
       };
     }
+
 
     // Get the JSON data from the API response
     const data = await response.json();
@@ -79,7 +82,9 @@ exports.handler = async function(event, context) {
     console.error('Proxy Error:', error);
     return {
       statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Failed to fetch data from the HTS API.' }),
     };
   }
 };
+

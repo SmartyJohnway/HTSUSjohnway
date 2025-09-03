@@ -370,8 +370,11 @@ function initializeHtsApiApp() {
         const searchTerm = searchInput.value.trim();
         const show232Only = document.getElementById('show232Only').checked;
 
-        if (searchTerm.length < 2 && !show232Only) {
-            resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">請輸入至少 2 個字元以進行搜尋${show232Only ? '，或選擇僅顯示 232 條款相關項目' : ''}。</p></div>`;
+        if (searchTerm.length < 2) {
+            const message = show232Only
+                ? '請輸入至少 2 個字元以搜尋 232 條款相關項目。'
+                : '請輸入至少 2 個字元以進行搜尋。';
+            resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">${message}</p></div>`;
             return;
         }
 
@@ -380,31 +383,40 @@ function initializeHtsApiApp() {
         // *** MODIFIED FOR NETLIFY PROXY ***
         const apiUrl = `/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(searchTerm)}`;
 
-                try {
-            // We no longer need the proxy URL for the fetch call itself
+        try {
             const response = await fetch(apiUrl);
-            // 根據不同的 HTTP 狀態碼回傳更明確的錯誤資訊
-            if (response.status === 404) {
-                throw new Error('伺服器無法找到 API 函式 (404)');
-            } else if (response.status === 500) {
-                throw new Error('後端系統錯誤 (500)');
-            } else if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${errorText}`);
-            }
             const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                const bodyText = await response.text();
-                throw new Error(`Unexpected content-type: ${contentType}. ${bodyText}`);
+            const isJson = contentType.includes('application/json');
+            const data = isJson ? await response.json() : await response.text();
+
+            if (!response.ok) {
+                if (isJson) {
+                    throw new Error(data.error || `代理請求失敗: ${response.status} ${response.statusText}`);
+                }
+                if (response.status === 404) {
+                    throw new Error('伺服器無法找到 API 函式 (404)');
+                } else if (response.status === 500) {
+                    throw new Error('後端系統錯誤 (500)');
+                }
+                throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${data}`);
             }
+
+            if (!isJson) {
+                throw new Error(`Unexpected content-type: ${contentType}. ${data}`);
+            }
+
             const data = await response.json();
             // 確保 data.results 是陣列
             if (!Array.isArray(data.results)) {
                 throw new Error('API 回傳的資料格式不正確');
-            }            
+            }
+            // 根據 show232Only 過濾結果
+            const filteredResults = show232Only
+                ? data.results.filter(item => check232Applicability(item, data.results))
+                : data.results;
             // 儲存所有結果
-            window.currentSearchResults = data.results;
-            renderResults(data.results);
+            window.currentSearchResults = filteredResults;
+            renderResults(filteredResults);
         } catch (error) {
             console.error("API Search Error:", error);
             resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-red-600">查詢時發生錯誤</p><p class="text-sm text-gray-500 mt-1">${error.message}</p></div>`;
@@ -425,7 +437,7 @@ function initializeHtsApiApp() {
     let lastClickedLink = null;
     let clickTimer = null;
 
-    document.addEventListener('click', async (e) => {
+    document.addEventListener('click', async (e) => {␊
         if (e.target.classList.contains('footnote-link')) {
             e.preventDefault();
             const htsCode = e.target.dataset.hts;
@@ -453,17 +465,23 @@ function initializeHtsApiApp() {
                 
                 try {
                     const response = await fetch(`/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(htsCode)}`);
-                    if (!response.ok) throw new Error('搜尋失敗');
-                    
-                    const data = await response.json();
-                    if (!data.results?.length) throw new Error('找不到相關資訊');
-                    
+                    const contentType = response.headers.get('content-type') || '';
+                    const isJson = contentType.includes('application/json');
+                    const data = isJson ? await response.json() : await response.text();
+
+                    if (!response.ok) {
+                        const message = isJson ? (data.error || '搜尋失敗') : '搜尋失敗';
+                        throw new Error(message);
+                    }
+
+                    if (!isJson || !data.results?.length) throw new Error('找不到相關資訊');
+
                     const result = data.results[0];
                     detailsContainer.innerHTML = `
                         <div class="bg-gray-50 rounded-lg p-3 text-sm border border-gray-200">
                             <div class="flex justify-between items-start">
                                 <div class="font-medium text-gray-900">${result.description || '無描述'}</div>
-                                <button class="text-gray-400 hover:text-gray-600 close-details" 
+                                <button class="text-gray-400 hover:text-gray-600 close-details"
                                         data-hts="${htsCode}">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -498,4 +516,10 @@ function initializeHtsApiApp() {
             }
         }
     });
+
+    return { performApiSearch, renderResults, check232Applicability };
+}
+
+if (typeof module !== 'undefined') {
+    module.exports = { initializeHtsApiApp };
 }
