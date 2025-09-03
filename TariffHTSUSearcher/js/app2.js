@@ -260,13 +260,13 @@ function initializeHtsApiApp() {
                 
                 processedValue = parts.join('');
 
-                return `␊
-                    <div class="footnote-container relative">␊
+                return `
+                    <div class="footnote-container relative">
                         <div class="text-xs ${is232Footnote ? 'text-red-600 font-medium' : 'text-gray-600'} mt-1">
                             <span class="font-medium">${esc(f.columns.join(', '))}:</span>
                             ${is232Footnote ? '🔔 ' : ''}${processedValue}
-                        </div>␊
-                        ${htsMatches.map((code, codeIndex) => `␊
+                        </div>
+                        ${htsMatches.map((code, codeIndex) => `
                             <div id="footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}"
                                  class="footnote-details mt-2 ml-4 hidden">
                             </div>
@@ -387,25 +387,26 @@ function initializeHtsApiApp() {
             const response = await fetch(apiUrl);
             const contentType = response.headers.get('content-type') || '';
             const isJson = contentType.includes('application/json');
-            const data = isJson ? await response.json() : await response.text();
+            const body = isJson ? await response.json() : await response.text();
 
             if (!response.ok) {
                 if (isJson) {
-                    throw new Error(data.error || `代理請求失敗: ${response.status} ${response.statusText}`);
+                    throw new Error(body.error || `代理請求失敗: ${response.status} ${response.statusText}`);
                 }
                 if (response.status === 404) {
                     throw new Error('伺服器無法找到 API 函式 (404)');
                 } else if (response.status === 500) {
                     throw new Error('後端系統錯誤 (500)');
                 }
-                throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${data}`);
+                throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${body}`);
             }
 
             if (!isJson) {
-                throw new Error(`Unexpected content-type: ${contentType}. ${data}`);
+                console.error('Unexpected content-type:', contentType, 'Body:', body);
+                throw new Error(`Unexpected content-type: ${contentType}`);
             }
 
-            const data = await response.json();
+            const data = body;
             // 確保 data.results 是陣列
             if (!Array.isArray(data.results)) {
                 throw new Error('API 回傳的資料格式不正確');
@@ -435,9 +436,8 @@ function initializeHtsApiApp() {
 
     // 處理註腳中HTSUS代碼的點擊事件
     let lastClickedLink = null;
-    let clickTimer = null;
 
-    document.addEventListener('click', async (e) => {␊
+    document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('footnote-link')) {
             e.preventDefault();
             const htsCode = e.target.dataset.hts;

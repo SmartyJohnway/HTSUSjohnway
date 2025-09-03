@@ -8,14 +8,14 @@ const log = (...args) => {
   }
 };
 
-exports.handler = async function(event, context) {␊
-  if (event.httpMethod !== 'GET') {␊
-    return {␊
-      statusCode: 405,␊
+exports.handler = async function(event, context) {
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
       headers: { Allow: 'GET', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method Not Allowed' })␊
-    };␊
-  }␊
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
+  }
   // Get the 'keyword' from the query string parameters of the request
   const keyword = event.queryStringParameters.keyword;
 
@@ -53,7 +53,7 @@ exports.handler = async function(event, context) {␊
     // Get the JSON data from the API response
     const data = await response.json();
     
-    // Add logging␊
+    // Add logging
     log('API Response:', JSON.stringify(data, null, 2));
 
     // Format the response - USITC API returns an array directly
@@ -64,7 +64,7 @@ exports.handler = async function(event, context) {␊
         : `No results found for keyword: ${keyword}`
     };
 
-    // Log the formatted response␊
+    // Log the formatted response
     log('Formatted Response:', JSON.stringify(formattedData, null, 2));
 
     // Return a successful response to the frontend with the formatted data

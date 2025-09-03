@@ -24,8 +24,18 @@ function initializeApp() {
         contents[contentId].style.display = 'block';
     }));
     
-    initializeApp1();
-    initializeHtsApiApp(); // Changed from initializeHtsAppV2
+    // Defensive checks to ensure dependent scripts loaded
+    if (typeof initializeApp1 === 'function') {
+        initializeApp1();
+    } else {
+        console.error('initializeApp1 is not available');
+    }
+
+    if (typeof initializeHtsApiApp === 'function') {
+        initializeHtsApiApp(); // Changed from initializeHtsAppV2
+    } else {
+        console.error('initializeHtsApiApp is not available');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
