@@ -389,11 +389,16 @@ function initializeHtsApiApp() {
         // *** MODIFIED FOR NETLIFY PROXY ***
         const apiUrl = `/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(searchTerm)}`;
 
-        try {
+                try {
             // We no longer need the proxy URL for the fetch call itself
             const response = await fetch(apiUrl);
-            if (!response.ok) {
-                 const errorText = await response.text();
+            // 根據不同的 HTTP 狀態碼回傳更明確的錯誤資訊
+            if (response.status === 404) {
+                throw new Error('伺服器無法找到 API 函式 (404)');
+            } else if (response.status === 500) {
+                throw new Error('後端系統錯誤 (500)');
+            } else if (!response.ok) {
+                const errorText = await response.text();
                 throw new Error(`代理請求失敗: ${response.status} ${response.statusText}. ${errorText}`);
             }
             const data = await response.json();
