@@ -520,6 +520,11 @@ function initializeHtsApiApp() {
     return { performApiSearch, renderResults, check232Applicability };
 }
 
+if (typeof window !== 'undefined') {
+    window.initializeHtsApiApp = initializeHtsApiApp;
+}
+
+
 if (typeof module !== 'undefined') {
     module.exports = { initializeHtsApiApp };
 }
