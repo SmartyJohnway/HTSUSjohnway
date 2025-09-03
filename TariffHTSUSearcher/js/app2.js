@@ -31,26 +31,7 @@ function initializeHtsApiApp() {
         const match = rate.match(/(\d+\.?\d*)/);
         return match ? parseFloat(match[0]) : 0;
     }
-
-    // 檢查是否符合232條款
-    function check232Applicability(item, allItems) {
-        const is232Related = item.footnotes?.some(f => 
-            f.value?.includes('subchapter III, chapter 99') ||
-            f.value?.includes('note 16') || // 鋼鐵
-            f.value?.includes('note 19')    // 鋁
-        ) ?? false;
-
-        // 如果當前項目不相關，檢查父項
-        if (!is232Related && item.statisticalSuffix) {
-            const parentHts = item.htsno.split('.').slice(0, -1).join('.');
-            const parentItem = allItems.find(i => i.htsno === parentHts);
-            if (parentItem) {
-                return check232Applicability(parentItem, allItems);
-            }
-        }
-        return is232Related;
-    }
-
+    
     // 在註腳中查找99章引用和232條款相關說明
     function findChapter99References(footnotes, column) {
         const refs = [];
@@ -161,18 +142,11 @@ function initializeHtsApiApp() {
 
         console.log('Final rates - General:', totalGeneralRate, 'Other:', totalOtherRate);
 
-        console.log('Final rates - General:', totalGeneralRate, 'Other:', totalOtherRate);
-
         // 返回計算結果
         return {
             generalTotal: totalGeneralRate,
             otherTotal: totalOtherRate,
             hasAdditionalDuty: additionalGeneralRate > 0 || additionalOtherRate > 0
-        };
-
-        return {
-            generalTotal: baseGeneralRate + additionalGeneralRate,
-            otherTotal: baseOtherRate + additionalOtherRate
         };
     }
 
@@ -196,83 +170,6 @@ function initializeHtsApiApp() {
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
     
     function usitcLink(code){ return `https://hts.usitc.gov/search?query=${encodeURIComponent(code)}`; }
-
-    // 檢查是否符合 232 條款
-    function check232Applicability(item, allItems) {
-        // 檢查當前項目的註腳
-        const is232Related = item.footnotes?.some(f => 
-            f.value?.includes('subchapter III, chapter 99') ||
-            f.value?.includes('note 16') || // 鋼鐵
-            f.value?.includes('note 19')    // 鋁
-        ) ?? false;
-
-        // 如果當前項目不相關，檢查父項
-        if (!is232Related && item.statisticalSuffix) {
-            const parentHts = item.htsno.split('.').slice(0, -1).join('.');
-            const parentItem = allItems.find(i => i.htsno === parentHts);
-            if (parentItem) {
-                return check232Applicability(parentItem, allItems);
-            }
-        }
-
-        return is232Related;
-    }
-
-    // 解析稅率字符串
-    function parseRate(rate) {
-        if (!rate || rate === 'Free' || rate === '') return 0;
-        const match = rate.match(/(\d+\.?\d*)/);
-        return match ? parseFloat(match[0]) : 0;
-    }
-
-    // 查找關聯的 99 章稅率
-    function findChapter99Rate(footnotes, allItems, rateType) {
-        let additionalRate = 0;
-        
-        // 在註腳中查找 99 章引用
-        footnotes?.forEach(f => {
-            if (f.columns.includes(rateType)) {
-                const htsMatch = f.value.match(/99\d{2}\.\d{2}\.\d{2}/);
-                if (htsMatch && Array.isArray(allItems)) {  // 確保 allItems 是陣列
-                    const chapter99Item = allItems.find(item => item.htsno === htsMatch[0]);
-                    if (chapter99Item) {
-                        // 解析 99 章的稅率
-                        if (chapter99Item[rateType]?.includes('+')) {
-                            const rateMatch = chapter99Item[rateType].match(/\+\s*(\d+\.?\d*)%/);
-                            if (rateMatch) {
-                                additionalRate += parseFloat(rateMatch[1]);
-                            }
-                        } else {
-                            additionalRate += parseRate(chapter99Item[rateType]);
-                        }
-                    }
-                }
-            }
-        });
-        
-        return additionalRate;
-    }
-
-    // 計算總稅率
-    function calculateTotalRates(item, allItems) {
-        // 基本稅率
-        const baseGeneralRate = parseRate(item.general);
-        const baseOtherRate = parseRate(item.other);
-
-        // 額外稅率（來自 99 章）
-        const additionalGeneralRate = findChapter99Rate(item.footnotes, allItems, 'general');
-        const additionalOtherRate = findChapter99Rate(item.footnotes, allItems, 'other');
-
-        return {
-            generalTotal: baseGeneralRate + additionalGeneralRate,
-            otherTotal: baseOtherRate + additionalOtherRate
-        };
-    }
-
-    // 格式化稅率顯示
-    function formatRate(rate) {
-        return rate === 0 ? 'Free' : rate + '%';
-    }
 
     function renderResults(items) {
         resultsContainer.innerHTML = '';

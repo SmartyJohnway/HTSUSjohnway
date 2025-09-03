@@ -1,11 +1,21 @@
 // This is a Netlify Function.
 // It acts as a proxy to bypass CORS issues when calling the USITC API from the browser.
-// This version uses dynamic import() to be compatible with node-fetch v3+.
+// Uses the native fetch available in Node 18+.
+
+const log = (...args) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+};
 
 exports.handler = async function(event, context) {
-  // Dynamically import node-fetch, which is an ES Module.
-  const fetch = (await import('node-fetch')).default;
-
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers: { Allow: 'GET' },
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
+  }
   // Get the 'keyword' from the query string parameters of the request
   const keyword = event.queryStringParameters.keyword;
 
@@ -40,8 +50,8 @@ exports.handler = async function(event, context) {
     // Get the JSON data from the API response
     const data = await response.json();
     
-    // Add logging
-    console.log('API Response:', JSON.stringify(data, null, 2));
+    // Add logging␊
+    log('API Response:', JSON.stringify(data, null, 2));
 
     // Format the response - USITC API returns an array directly
     const formattedData = {
@@ -51,8 +61,8 @@ exports.handler = async function(event, context) {
         : `No results found for keyword: ${keyword}`
     };
 
-    // Log the formatted response
-    console.log('Formatted Response:', JSON.stringify(formattedData, null, 2));
+    // Log the formatted response␊
+    log('Formatted Response:', JSON.stringify(formattedData, null, 2));
 
     // Return a successful response to the frontend with the formatted data
     return {
