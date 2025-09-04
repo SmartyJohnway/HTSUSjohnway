@@ -1,4 +1,5 @@
 const { safe } = require("../../infra/guard");
+const cache = require("../../infra/cache");
 
 // This is a Netlify Function.
 // It acts as a proxy to bypass CORS issues when calling the USITC API from the browser.
