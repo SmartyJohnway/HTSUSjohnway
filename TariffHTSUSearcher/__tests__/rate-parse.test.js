@@ -1,4 +1,4 @@
-import { initializeHtsApiApp } from '../js/app2.js';
+import '../js/app2.js';
 
 class Element {
   constructor() {
@@ -23,7 +23,7 @@ function setupDom() {
     getElementById: id => elements[id],
     addEventListener() {}
   };
-  global.window = { currentSearchResults: [] };
+  global.window = { currentSearchResults: [], safe: fn => fn };
 }
 
 describe('rate-parse', () => {
@@ -32,17 +32,17 @@ describe('rate-parse', () => {
   });
 
   test('parses "applicable subheading + 25%" as 25', () => {
-    const { parseChapter99Rate } = initializeHtsApiApp();
+    const { parseChapter99Rate } = window.initializeHtsApiApp();
     expect(parseChapter99Rate('applicable subheading + 25%')).toBe(25);
   });
 
   test('parses "The duty provided in the applicable subheading + 25%" as 25', () => {
-    const { parseChapter99Rate } = initializeHtsApiApp();
+    const { parseChapter99Rate } = window.initializeHtsApiApp();
     expect(parseChapter99Rate('The duty provided in the applicable subheading + 25%')).toBe(25);
   });
 
   test('parses "70%" as 70', () => {
-    const { parseChapter99Rate } = initializeHtsApiApp();
+    const { parseChapter99Rate } = window.initializeHtsApiApp();
     expect(parseChapter99Rate('70%')).toBe(70);
   });
 });

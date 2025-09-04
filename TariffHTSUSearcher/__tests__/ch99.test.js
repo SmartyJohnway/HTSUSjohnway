@@ -1,4 +1,4 @@
-import { initializeHtsApiApp } from '../js/app2.js';
+import '../js/app2.js';
 
 class Element {
   constructor() {
@@ -23,7 +23,7 @@ function setupDom() {
     getElementById: id => elements[id],
     addEventListener() {}
   };
-  global.window = { currentSearchResults: [] };
+  global.window = { currentSearchResults: [], safe: fn => fn };
 }
 
 describe('ch99', () => {
@@ -32,7 +32,7 @@ describe('ch99', () => {
   });
 
   test('extracts 9903.91.01 and detects Note 19', () => {
-    const { findChapter99References } = initializeHtsApiApp();
+    const { findChapter99References } = window.initializeHtsApiApp();
     const footnotes = [{ value: 'Refer to U.S. note 19 and 9903.91.01', columns: ['general'] }];
     const result = findChapter99References(footnotes, 'general');
     expect(result.refs).toContain('9903.91.01');
@@ -40,7 +40,7 @@ describe('ch99', () => {
   });
 
   test('returns empty when no references present', () => {
-    const { findChapter99References } = initializeHtsApiApp();
+    const { findChapter99References } = window.initializeHtsApiApp();
     const footnotes = [{ value: 'no relevant note', columns: ['general'] }];
     const result = findChapter99References(footnotes, 'general');
     expect(result.refs).toHaveLength(0);
