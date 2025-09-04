@@ -1,13 +1,14 @@
-const { check232Applicability } = require('../core/footnote-judge');
-const { calculateTotalRates, formatRate } = require('../core/compute');
-const { parseRate } = require('../core/rate-parse');
-const { esc } = require('../utils/escape');
+import { check232Applicability } from '../core/footnote-judge.js';
+import { calculateTotalRates, formatRate } from '../core/compute.js';
+import { parseRate } from '../core/rate-parse.js';
+import { esc } from '../utils/escape.js';
+import { highlightTerm } from '../utils/text.js';
 
 function usitcLink(code) {
   return `https://hts.usitc.gov/search?query=${encodeURIComponent(code)}`;
 }
 
-function renderCards(items, { searchInput, resultsContainer, welcomeMessage }) {
+export function renderCards(items, { searchInput, resultsContainer, welcomeMessage }) {
   resultsContainer.innerHTML = '';
   welcomeMessage.classList.add('hidden');
 
@@ -28,8 +29,7 @@ function renderCards(items, { searchInput, resultsContainer, welcomeMessage }) {
     const searchTerm = searchInput.value.trim();
     let descriptionHtml = esc(item.description || '');
     if (searchTerm) {
-      const regex = new RegExp(searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-      descriptionHtml = descriptionHtml.replace(regex, `<mark class="bg-yellow-200 px-1 rounded">${searchTerm}</mark>`);
+      descriptionHtml = highlightTerm(descriptionHtml, searchTerm);
     }
 
     function findParentRate(list, currentItem) {
@@ -176,5 +176,3 @@ function renderCards(items, { searchInput, resultsContainer, welcomeMessage }) {
 
   resultsContainer.appendChild(fragment);
 }
-
-module.exports = { renderCards };

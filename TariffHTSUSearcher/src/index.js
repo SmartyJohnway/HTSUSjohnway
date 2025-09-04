@@ -1,7 +1,7 @@
-const { check232Applicability } = require('./core/footnote-judge');
-const { renderCards } = require('./ui/render-cards');
+import { check232Applicability } from './core/footnote-judge.js';
+import { renderCards } from './ui/render-cards.js';
 
-function initializeHtsApiApp() {
+export function initializeHtsApiApp() {
   const searchInput = document.getElementById('htsSearchInput');
   const searchBtn = document.getElementById('htsSearchBtn');
   const resultsContainer = document.getElementById('htsResultsContainer');
@@ -166,5 +166,3 @@ function initializeHtsApiApp() {
 if (typeof window !== 'undefined') {
   window.initializeHtsApiApp = initializeHtsApiApp;
 }
-
-module.exports = { initializeHtsApiApp };

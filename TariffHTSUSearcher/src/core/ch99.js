@@ -1,4 +1,4 @@
-function findChapter99References(footnotes, column) {
+export function findChapter99References(footnotes, column) {
   const refs = [];
   let has232Note = false;
 
@@ -15,5 +15,3 @@ function findChapter99References(footnotes, column) {
 
   return { refs, has232Note };
 }
-
-module.exports = { findChapter99References };

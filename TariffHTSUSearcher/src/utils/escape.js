@@ -1,4 +1,4 @@
-function esc(s) {
+export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, m => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -7,5 +7,3 @@ function esc(s) {
     "'": '&#39;'
   }[m]));
 }
-
-module.exports = { esc };

@@ -1,7 +1,7 @@
-const { parseRate, parseChapter99Rate } = require('./rate-parse');
-const { findChapter99References } = require('./ch99');
+import { parseRate, parseChapter99Rate } from './rate-parse.js';
+import { findChapter99References } from './ch99.js';
 
-function calculateTotalRates(item, allItems) {
+export function calculateTotalRates(item, allItems) {
   if (!Array.isArray(allItems)) return { generalTotal: 0, otherTotal: 0 };
 
   const baseGeneralRate = parseRate(item.general);
@@ -55,8 +55,6 @@ function calculateTotalRates(item, allItems) {
   };
 }
 
-function formatRate(rate) {
+export function formatRate(rate) {
   return rate === 0 ? 'Free' : rate + '%';
 }
-
-module.exports = { calculateTotalRates, formatRate };
