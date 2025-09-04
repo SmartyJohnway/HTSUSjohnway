@@ -18,3 +18,6 @@ function safe(fn, fallback) {
 
 if (typeof window !== 'undefined') {
   window.safe = safe;
+}
+
+export { safe };
