@@ -152,3 +152,5 @@ function initializeApp1() {
     loadTariffRules();
     performSearch(); // Initial render (will show welcome message)
 }
+
+if (typeof window !== "undefined") window.initializeApp1 = initializeApp1;
