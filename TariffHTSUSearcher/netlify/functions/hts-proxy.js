@@ -34,17 +34,48 @@ async function handler(event, context) {
     };
   }
 
+  // Return cached result if available
+  const cached = cache.get(keyword);
+  if (cached) {
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: JSON.stringify(cached)
+    };
+  }
+
   // The target API endpoint
   const API_ENDPOINT = `https://hts.usitc.gov/reststop/search?keyword=${encodeURIComponent(keyword)}`;
 
   log('Requesting API endpoint:', API_ENDPOINT);
 
-  // Make the actual request from the server-side function to the USITC API
-  const response = await fetch(API_ENDPOINT, {
+  // Make the actual request from the server-side function to the USITC API with timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+  let response;
+  try {
+    response = await fetch(API_ENDPOINT, {
       headers: {
-          'User-Agent': 'Tariff-Query-App/1.0'
-      }
-  });
+        'User-Agent': 'Tariff-Query-App/1.0'
+      },
+      signal: controller.signal
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      return {
+        statusCode: 504,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: '504 Gateway timeout' })
+      };
+    }
+    throw err;
+  }
+  clearTimeout(timeoutId);
 
   // Check if the API response is successful
   if (!response.ok) {
@@ -57,21 +88,31 @@ async function handler(event, context) {
   }
 
   // Get the JSON data from the API response
-  const data = await response.json();
+  const json = await response.json();
 
   // Add logging
-  log('API Response:', JSON.stringify(data, null, 2));
+  log('API Response:', JSON.stringify(json, null, 2));
 
-  // Format the response - USITC API returns an array directly
+  // Validate schema
+  if (!json || !Array.isArray(json.results)) {
+    return {
+      statusCode: 502,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: '502 Schema mismatch' })
+    };
+  }
+
   const formattedData = {
-    results: Array.isArray(data) ? data : [],
-    message: Array.isArray(data) && data.length > 0
-      ? `Found ${data.length} results`
+    results: json.results,
+    message: json.results.length > 0
+      ? `Found ${json.results.length} results`
       : `No results found for keyword: ${keyword}`
   };
 
   // Log the formatted response
   log('Formatted Response:', JSON.stringify(formattedData, null, 2));
+
+  cache.set(keyword, formattedData);
 
   // Return a successful response to the frontend with the formatted data
   return {
