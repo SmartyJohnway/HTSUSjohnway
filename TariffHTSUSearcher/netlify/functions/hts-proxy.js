@@ -1,3 +1,5 @@
+const { safe } = require("../../infra/guard");
+
 // This is a Netlify Function.
 // It acts as a proxy to bypass CORS issues when calling the USITC API from the browser.
 // Uses the native fetch available in Node 18+.
@@ -8,7 +10,7 @@ const log = (...args) => {
   }
 };
 
-exports.handler = async function(event, context) {
+async function handler(event, context) {
   // Log incoming request details for debugging
   log('Incoming URL:', event.rawUrl || event.path);
   log('Incoming params:', event.queryStringParameters);
@@ -37,61 +39,57 @@ exports.handler = async function(event, context) {
 
   log('Requesting API endpoint:', API_ENDPOINT);
 
-  try {
-    // Make the actual request from the server-side function to the USITC API
-    const response = await fetch(API_ENDPOINT, {
-        headers: {
-            'User-Agent': 'Tariff-Query-App/1.0'
-        }
-    });
-
-    // Check if the API response is successful
-    if (!response.ok) {
-      const errorBody = await response.text();
-      return {
-        statusCode: response.status,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: `API Error: ${response.statusText}. Details: ${errorBody}` })
-      };
-    }
-
-
-    // Get the JSON data from the API response
-    const data = await response.json();
-    
-    // Add logging
-    log('API Response:', JSON.stringify(data, null, 2));
-
-    // Format the response - USITC API returns an array directly
-    const formattedData = {
-      results: Array.isArray(data) ? data : [],
-      message: Array.isArray(data) && data.length > 0 
-        ? `Found ${data.length} results` 
-        : `No results found for keyword: ${keyword}`
-    };
-
-    // Log the formatted response
-    log('Formatted Response:', JSON.stringify(formattedData, null, 2));
-
-    // Return a successful response to the frontend with the formatted data
-    return {
-      statusCode: 200,
+  // Make the actual request from the server-side function to the USITC API
+  const response = await fetch(API_ENDPOINT, {
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: JSON.stringify(formattedData)
-    };
-  } catch (error) {
-    // Handle any network errors during the fetch
-    console.error('Proxy Error:', error);
-    log('Error during fetch:', { endpoint: API_ENDPOINT, params: event.queryStringParameters, message: error.message });
+          'User-Agent': 'Tariff-Query-App/1.0'
+      }
+  });
+
+  // Check if the API response is successful
+  if (!response.ok) {
+    const errorBody = await response.text();
     return {
-      statusCode: 500,
+      statusCode: response.status,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to fetch data from the HTS API.' }),
+      body: JSON.stringify({ error: `API Error: ${response.statusText}. Details: ${errorBody}` })
     };
   }
-};
 
+  // Get the JSON data from the API response
+  const data = await response.json();
+
+  // Add logging
+  log('API Response:', JSON.stringify(data, null, 2));
+
+  // Format the response - USITC API returns an array directly
+  const formattedData = {
+    results: Array.isArray(data) ? data : [],
+    message: Array.isArray(data) && data.length > 0
+      ? `Found ${data.length} results`
+      : `No results found for keyword: ${keyword}`
+  };
+
+  // Log the formatted response
+  log('Formatted Response:', JSON.stringify(formattedData, null, 2));
+
+  // Return a successful response to the frontend with the formatted data
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+    body: JSON.stringify(formattedData)
+  };
+}
+
+exports.handler = safe(handler, (error) => {
+  console.error('Proxy Error:', error);
+  return {
+    statusCode: 500,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error: 'Failed to fetch data from the HTS API.' }),
+  };
+});

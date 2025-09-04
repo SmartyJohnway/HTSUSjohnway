@@ -1,7 +1,6 @@
 {
-  "name": "tariff-search-app",
-  "version": "1.0.0",
-  "scripts": {
-    "test": "node --test"
-  }
+  "name": "tariff-htsus-app2",
+  "type": "module",
+  "scripts": { "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand" },
+  "devDependencies": { "jest": "^29.7.0" }
 }

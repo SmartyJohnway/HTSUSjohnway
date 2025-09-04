@@ -1,3 +1,5 @@
+const safe = (typeof window !== "undefined" && window.safe) || require("../infra/guard").safe;
+
 // --- APP 1: STEEL/ALUMINUM TARIFFS (DATA-DRIVEN REFACTOR) ---
 function initializeApp1() {
     // --- App 1 State & DOM ---
@@ -13,40 +15,38 @@ function initializeApp1() {
     let currentFilter = 'All';
 
     // --- App 1 Functions ---
-    async function loadTariffRules() {
-        try {
-            statusMessage.textContent = '正在載入關稅規則...';
-            statusMessage.classList.remove('text-red-700', 'text-green-700');
-            statusMessage.classList.add('text-blue-700');
-            
-            const response = await fetch('./tariff_rules.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            
-            if (!Array.isArray(data)) {
-                throw new Error("JSON is not an array.");
-            }
-            tariffData = data;
-            statusMessage.textContent = `成功載入關稅規則，包含 ${tariffData.length} 筆規則。`;
-            statusMessage.classList.remove('text-blue-700');
-            statusMessage.classList.add('text-green-700');
-            loaderUI.classList.remove('bg-blue-50', 'border-blue-200');
-            loaderUI.classList.add('bg-green-50', 'border-green-200');
-            
-            searchInput.disabled = false;
-            searchInput.placeholder = "輸入中文/英文關鍵字或HTSUS碼 (例如: 鋼管, pipe, 8407)...";
-            welcomeMessage.classList.add('hidden');
-            performSearch();
-        } catch (error) {
-            statusMessage.textContent = `錯誤: 無法載入資料。(${error.message})`;
-            statusMessage.classList.remove('text-blue-700');
-            statusMessage.classList.add('text-red-700');
-            loaderUI.classList.remove('bg-blue-50', 'border-blue-200');
-            loaderUI.classList.add('bg-red-50', 'border-red-200');
+    const loadTariffRules = safe(async () => {
+        statusMessage.textContent = '正在載入關稅規則...';
+        statusMessage.classList.remove('text-red-700', 'text-green-700');
+        statusMessage.classList.add('text-blue-700');
+
+        const response = await fetch('./tariff_rules.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    }
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            throw new Error('JSON is not an array.');
+        }
+        tariffData = data;
+        statusMessage.textContent = `成功載入關稅規則，包含 ${tariffData.length} 筆規則。`;
+        statusMessage.classList.remove('text-blue-700');
+        statusMessage.classList.add('text-green-700');
+        loaderUI.classList.remove('bg-blue-50', 'border-blue-200');
+        loaderUI.classList.add('bg-green-50', 'border-green-200');
+
+        searchInput.disabled = false;
+        searchInput.placeholder = "輸入中文/英文關鍵字或HTSUS碼 (例如: 鋼管, pipe, 8407)...";
+        welcomeMessage.classList.add('hidden');
+        performSearch();
+    }, (error) => {
+        statusMessage.textContent = `錯誤: 無法載入資料。(${error.message})`;
+        statusMessage.classList.remove('text-blue-700');
+        statusMessage.classList.add('text-red-700');
+        loaderUI.classList.remove('bg-blue-50', 'border-blue-200');
+        loaderUI.classList.add('bg-red-50', 'border-red-200');
+    });
 
     function handleFilterClick(e) {
         const text = e.currentTarget.textContent;
@@ -61,7 +61,7 @@ function initializeApp1() {
         if (e.target.classList.contains('hts-code-link')) {
             const code = e.target.textContent.trim();
             // Always switch to HTS tab and search via API
-            document.getElementById('tabHts').click(); 
+            document.getElementById('tabHts').click();
             const htsInput = document.getElementById('htsSearchInput');
             const htsSearchBtn = document.getElementById('htsSearchBtn');
             if (htsInput) {
@@ -85,51 +85,40 @@ function initializeApp1() {
         return tariffHtml;
     }
 
-    function renderResults(results) {
-    resultsContainer.innerHTML = '';
-    if (tariffData.length === 0) {
-        welcomeMessage.classList.remove('hidden');
-        noResults.classList.add('hidden');
-        return;
-    }
-    welcomeMessage.classList.add('hidden');
-    noResults.classList.toggle('hidden', results.length > 0);
+    const renderResults = safe((results) => {
+        resultsContainer.innerHTML = '';
+        if (tariffData.length === 0) {
+            welcomeMessage.classList.remove('hidden');
+            noResults.classList.add('hidden');
+            return;
+        }
+        welcomeMessage.classList.add('hidden');
+        noResults.classList.toggle('hidden', results.length > 0);
 
-    const batchSize = 20;
-    let index = 0;
-
-    function renderBatch() {
-        const start = index;
-        const end = Math.min(index + batchSize, results.length);
-        let batchHtml = '';
-        for (; index < end; index++) {
-            const item = results[index];
+        results.forEach((item, index) => {
             const materialClass = item.material.includes('Steel') && item.material.includes('Aluminum') ? 'bg-indigo-100 text-indigo-800' : (item.material.includes('Steel') ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800');
             const materialText = item.material.includes('Steel') && item.material.includes('Aluminum') ? '鋼/鋁' : (item.material.includes('Steel') ? '鋼鐵' : '鋁');
             let titleTag = item.isDerivative ? `<span class="text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full ml-2">8/18 新增 50%</span>` : '';
             const detailsHtml = item.details?.map(detail => `<div class="py-2 px-4 flex items-start border-t border-gray-200 hover:bg-gray-50"><span class="hts-code-link text-sm font-mono text-gray-500 w-32 flex-shrink-0 cursor-pointer">${detail.hts || detail.sub_hts}</span><span class="text-sm text-gray-700">${detail.desc || ''}</span></div>`).join('') || '';
             const tariffInfoHtml = renderTariffInfo(item.tariffs);
             const card = `<div class="bg-white rounded-xl shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-lg"><div id="header-${index}" class="p-5 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center"><div class="flex-grow"><div class="flex justify-between items-start gap-4"><h2 class="text-lg font-bold text-gray-900">${item.description} ${titleTag}</h2><span class="text-xs font-semibold px-2 py-1 rounded-full ${materialClass} flex-shrink-0 mt-1">${materialText}</span></div><p class="text-sm text-gray-500 mt-2">相關 HTSUS 章節: ${item.chapter}</p></div><svg id="chevron-${index}" class="chevron w-6 h-6 text-gray-400 flex-shrink-0 ml-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></div><div id="details-${index}" class="details-container px-5 pb-5 overflow-hidden transition-all">${detailsHtml}${tariffInfoHtml}</div></div>`;
-            batchHtml += card;
-        }
-        resultsContainer.insertAdjacentHTML('beforeend', batchHtml);
-        for (let i = start; i < end; i++) {
-            const header = document.getElementById(`header-${i}`);
+            resultsContainer.innerHTML += card;
+        });
+
+        results.forEach((_, index) => {
+            const header = document.getElementById(`header-${index}`);
             if (header) {
                 header.addEventListener('click', () => {
-                    document.getElementById(`details-${i}`).classList.toggle('open');
-                    document.getElementById(`chevron-${i}`).classList.toggle('open');
+                    document.getElementById(`details-${index}`).classList.toggle('open');
+                    document.getElementById(`chevron-${index}`).classList.toggle('open');
                 });
             }
-        }
-        if (index < results.length) {
-            requestAnimationFrame(renderBatch);
-        }
-    }
+        });
+    }, (error) => {
+        resultsContainer.innerHTML = `<div class="text-center py-10 text-red-600">渲染失敗：${error.message}</div>`;
+    });
 
-    renderBatch();
-}
-function performSearch() {
+    function performSearch() {
         if (tariffData.length === 0) {
             renderResults([]);
             return;
@@ -158,7 +147,7 @@ function performSearch() {
     filterButtons.forEach(button => button.addEventListener('click', handleFilterClick));
     searchInput.addEventListener('input', performSearch);
     resultsContainer.addEventListener('click', handleHtsCodeClick);
-    
+
     // 自動載入 tariff_rules.json
     loadTariffRules();
     performSearch(); // Initial render (will show welcome message)

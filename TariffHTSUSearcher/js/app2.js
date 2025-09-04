@@ -1,8 +1,7 @@
-// --- APP 2: HTSUS API TARIFF DATABASE ---
-const cache = (typeof require !== 'undefined') ? require('../infra/cache') : (typeof window !== 'undefined' ? window.appCache : {});
-const { debounce } = (typeof require !== 'undefined') ? require('../ui/state') : (typeof window !== 'undefined' ? window.uiState : {});
+const safe = (typeof window !== "undefined" && window.safe) || require("../infra/guard").safe;
 
-function initializeHtsApiApp() {
+// --- APP 2: HTSUS API TARIFF DATABASE ---␊
+export function initializeHtsApiApp() {
     // --- App 2 DOM ---
     const searchInput = document.getElementById('htsSearchInput');
     const searchBtn = document.getElementById('htsSearchBtn');
@@ -44,7 +43,8 @@ function initializeHtsApiApp() {
         footnotes?.forEach(f => {
             if (f.columns.includes(column)) {
                 // 檢查是否包含232條款相關說明
-                if (f.value.includes('note 16') || 
+                if (f.value.includes('note 16') ||
+                    f.value.includes('note 19') ||
                     f.value.includes('subchapter III, chapter 99')) {
                     has232Note = true;
                 }
@@ -175,7 +175,7 @@ function initializeHtsApiApp() {
     
     function usitcLink(code){ return `https://hts.usitc.gov/search?query=${encodeURIComponent(code)}`; }
 
-    function renderResults(items) {
+    const renderResults = safe((items) => {
     resultsContainer.innerHTML = '';
     welcomeMessage.classList.add('hidden');
 
@@ -183,6 +183,11 @@ function initializeHtsApiApp() {
         resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">找不到符合條件的結果，請嘗試其他關鍵字。</p></div>`;
         return;
     }
+        if (typeof document.createDocumentFragment !== 'function') {
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
 
     const searchTerm = searchInput.value.trim();
     const batchSize = 20;
@@ -401,14 +406,14 @@ async function performApiSearch() {
         try {
             let data;
             try {
-                const response = await fetch(proxyUrl);
+                const response = await api.safe(proxyUrl);
                 const contentType = response.headers.get('content-type') || '';
                 if (!response.ok || !contentType.includes('application/json')) {
                     throw new Error('Proxy returned non-JSON');
                 }
                 data = await response.json();
             } catch (proxyError) {
-                const response = await fetch(directUrl, {
+                 const response = await api.safe(directUrl, {
                     headers: { 'User-Agent': 'Tariff-Query-App/1.0' }
                 });
                 const contentType = response.headers.get('content-type') || '';
@@ -479,7 +484,7 @@ async function performApiSearch() {
                 detailsContainer.innerHTML = '<div class="text-gray-500 text-sm py-2">搜尋中...</div>';
                 
                 try {
-                    const response = await fetch(`/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(htsCode)}`);
+                     const response = await api.safe(`/.netlify/functions/hts-proxy?keyword=${encodeURIComponent(htsCode)}`);
                     const contentType = response.headers.get('content-type') || '';
                     const isJson = contentType.includes('application/json');
                     const data = isJson ? await response.json() : await response.text();
@@ -532,12 +537,12 @@ async function performApiSearch() {
         }
     });
 
-    return { performApiSearch, renderResults, check232Applicability };
-}
-if (typeof window !== 'undefined') {
-    window.initializeHtsApiApp = initializeHtsApiApp;
-}
-
-if (typeof module !== 'undefined') {
-    module.exports = { initializeHtsApiApp };
+    return { performApiSearch, renderResults, check232Applicability, findChapter99References, parseChapter99Rate };
+}␊
+if (typeof window !== 'undefined') {␊
+    window.initializeHtsApiApp = initializeHtsApiApp;␊
+}␊
+␊
+if (typeof module !== 'undefined') {␊
+    module.exports = { initializeHtsApiApp };␊
 }
