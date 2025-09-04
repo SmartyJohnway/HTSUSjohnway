@@ -1,4 +1,4 @@
-const safe = (typeof window !== "undefined" && window.safe) || require("../infra/guard").safe;
+import { safe as safeCall } from "../infra/guard.js";
 
 // --- APP 1: STEEL/ALUMINUM TARIFFS (DATA-DRIVEN REFACTOR) ---
 function initializeApp1() {
@@ -15,7 +15,7 @@ function initializeApp1() {
     let currentFilter = 'All';
 
     // --- App 1 Functions ---
-    const loadTariffRules = safe(async () => {
+    const loadTariffRules = safeCall(async () => {
         statusMessage.textContent = '正在載入關稅規則...';
         statusMessage.classList.remove('text-red-700', 'text-green-700');
         statusMessage.classList.add('text-blue-700');
@@ -85,7 +85,7 @@ function initializeApp1() {
         return tariffHtml;
     }
 
-    const renderResults = safe((results) => {
+    const renderResults = safeCall((results) => {
         resultsContainer.innerHTML = '';
         if (tariffData.length === 0) {
             welcomeMessage.classList.remove('hidden');
@@ -154,3 +154,5 @@ function initializeApp1() {
 }
 
 if (typeof window !== "undefined") window.initializeApp1 = initializeApp1;
+
+export { initializeApp1 };

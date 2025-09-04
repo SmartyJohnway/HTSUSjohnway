@@ -16,8 +16,5 @@ function safe(fn, fallback) {
   };
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { safe };
-} else if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined') {
   window.safe = safe;
-}

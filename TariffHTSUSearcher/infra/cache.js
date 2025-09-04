@@ -32,9 +32,8 @@ function clear() {
 
 const api = { get, set, clear };
 
-if (typeof module !== 'undefined') {
-  module.exports = api;
-}
 if (typeof window !== 'undefined') {
   window.appCache = api;
 }
+
+export default api;

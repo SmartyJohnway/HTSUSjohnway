@@ -1,4 +1,4 @@
-const safe = (typeof window !== "undefined" && window.safe) || require("../infra/guard").safe;␊
+import { safe as safeCall } from "../infra/guard.js";␊
 ␊
 // --- APP 2: HTSUS API TARIFF DATABASE ---
 function initializeHtsApiApp() {
@@ -175,7 +175,7 @@ function initializeHtsApiApp() {
     ␊
     function usitcLink(code){ return `https://hts.usitc.gov/search?query=${encodeURIComponent(code)}`; }␊
 ␊
-    const renderResults = safe((items) => {␊
+    const renderResults = safeCall((items) => {␊
     resultsContainer.innerHTML = '';␊
     welcomeMessage.classList.add('hidden');␊
 ␊
@@ -542,7 +542,5 @@ async function performApiSearch() {␊
 if (typeof window !== 'undefined') {␊␊
     window.initializeHtsApiApp = initializeHtsApiApp;␊␊
 }␊␊
-␊␊
-if (typeof module !== 'undefined') {␊␊
-    module.exports = { initializeHtsApiApp };␊␊
-}
+
+export { initializeHtsApiApp };␊
