@@ -1,4 +1,4 @@
-function check232Applicability(item, allItems) {
+export function check232Applicability(item, allItems) {
   const is232Related = item.footnotes?.some(f =>
     f.value?.includes('subchapter III, chapter 99') ||
     f.value?.includes('note 16') ||
@@ -14,5 +14,3 @@ function check232Applicability(item, allItems) {
   }
   return is232Related;
 }
-
-module.exports = { check232Applicability };
