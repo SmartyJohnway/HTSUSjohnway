@@ -86,37 +86,50 @@ function initializeApp1() {
     }
 
     function renderResults(results) {
-        resultsContainer.innerHTML = ''; 
-        if (tariffData.length === 0) {
-            welcomeMessage.classList.remove('hidden');
-            noResults.classList.add('hidden');
-            return;
-        }
-        welcomeMessage.classList.add('hidden');
-        noResults.classList.toggle('hidden', results.length > 0);
+    resultsContainer.innerHTML = '';
+    if (tariffData.length === 0) {
+        welcomeMessage.classList.remove('hidden');
+        noResults.classList.add('hidden');
+        return;
+    }
+    welcomeMessage.classList.add('hidden');
+    noResults.classList.toggle('hidden', results.length > 0);
 
-        results.forEach((item, index) => {
+    const batchSize = 20;
+    let index = 0;
+
+    function renderBatch() {
+        const start = index;
+        const end = Math.min(index + batchSize, results.length);
+        let batchHtml = '';
+        for (; index < end; index++) {
+            const item = results[index];
             const materialClass = item.material.includes('Steel') && item.material.includes('Aluminum') ? 'bg-indigo-100 text-indigo-800' : (item.material.includes('Steel') ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800');
             const materialText = item.material.includes('Steel') && item.material.includes('Aluminum') ? '鋼/鋁' : (item.material.includes('Steel') ? '鋼鐵' : '鋁');
             let titleTag = item.isDerivative ? `<span class="text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full ml-2">8/18 新增 50%</span>` : '';
             const detailsHtml = item.details?.map(detail => `<div class="py-2 px-4 flex items-start border-t border-gray-200 hover:bg-gray-50"><span class="hts-code-link text-sm font-mono text-gray-500 w-32 flex-shrink-0 cursor-pointer">${detail.hts || detail.sub_hts}</span><span class="text-sm text-gray-700">${detail.desc || ''}</span></div>`).join('') || '';
             const tariffInfoHtml = renderTariffInfo(item.tariffs);
             const card = `<div class="bg-white rounded-xl shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-lg"><div id="header-${index}" class="p-5 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center"><div class="flex-grow"><div class="flex justify-between items-start gap-4"><h2 class="text-lg font-bold text-gray-900">${item.description} ${titleTag}</h2><span class="text-xs font-semibold px-2 py-1 rounded-full ${materialClass} flex-shrink-0 mt-1">${materialText}</span></div><p class="text-sm text-gray-500 mt-2">相關 HTSUS 章節: ${item.chapter}</p></div><svg id="chevron-${index}" class="chevron w-6 h-6 text-gray-400 flex-shrink-0 ml-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></div><div id="details-${index}" class="details-container px-5 pb-5 overflow-hidden transition-all">${detailsHtml}${tariffInfoHtml}</div></div>`;
-            resultsContainer.innerHTML += card;
-        });
-
-        results.forEach((_, index) => {
-            const header = document.getElementById(`header-${index}`);
+            batchHtml += card;
+        }
+        resultsContainer.insertAdjacentHTML('beforeend', batchHtml);
+        for (let i = start; i < end; i++) {
+            const header = document.getElementById(`header-${i}`);
             if (header) {
                 header.addEventListener('click', () => {
-                    document.getElementById(`details-${index}`).classList.toggle('open');
-                    document.getElementById(`chevron-${index}`).classList.toggle('open');
+                    document.getElementById(`details-${i}`).classList.toggle('open');
+                    document.getElementById(`chevron-${i}`).classList.toggle('open');
                 });
             }
-        });
+        }
+        if (index < results.length) {
+            requestAnimationFrame(renderBatch);
+        }
     }
 
-    function performSearch() {
+    renderBatch();
+}
+function performSearch() {
         if (tariffData.length === 0) {
             renderResults([]);
             return;

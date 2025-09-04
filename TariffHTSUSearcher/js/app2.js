@@ -1,4 +1,7 @@
 // --- APP 2: HTSUS API TARIFF DATABASE ---
+const cache = (typeof require !== 'undefined') ? require('../infra/cache') : (typeof window !== 'undefined' ? window.appCache : {});
+const { debounce } = (typeof require !== 'undefined') ? require('../ui/state') : (typeof window !== 'undefined' ? window.uiState : {});
+
 function initializeHtsApiApp() {
     // --- App 2 DOM ---
     const searchInput = document.getElementById('htsSearchInput');
@@ -7,6 +10,7 @@ function initializeHtsApiApp() {
     const loader = document.getElementById('htsLoader');
     const welcomeMessage = document.getElementById('htsWelcomeMessage');
     const statusContainer = document.getElementById('htsStatusContainer');
+    const show232OnlyCheckbox = document.getElementById('show232Only');
 
     // --- 232條款和稅率計算函數 ---
     function check232Applicability(item, allItems) {
@@ -172,209 +176,216 @@ function initializeHtsApiApp() {
     function usitcLink(code){ return `https://hts.usitc.gov/search?query=${encodeURIComponent(code)}`; }
 
     function renderResults(items) {
-        resultsContainer.innerHTML = '';
-        welcomeMessage.classList.add('hidden');
+    resultsContainer.innerHTML = '';
+    welcomeMessage.classList.add('hidden');
 
-        if (!items || items.length === 0) {
-            resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">找不到符合條件的結果，請嘗試其他關鍵字。</p></div>`;
-            return;
-        }
-
-        const fragment = document.createDocumentFragment();
-        items.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'bg-white border border-gray-200 rounded-lg p-4 transition-all hover:bg-gray-50 hover:border-blue-300';
-            const indentPx = (Number(item.indent) || 0) * 20;
-            
-            // 檢查232條款相關性和計算總稅率
-            const itemIs232Related = check232Applicability(item, items);
-            const { generalTotal: itemGeneralTotal, otherTotal: itemOtherTotal } = calculateTotalRates(item, items);
-            
-            // Highlight search term
-            const searchTerm = searchInput.value.trim();
-            let descriptionHtml = esc(item.description || '');
-            if (searchTerm) {
-                 const regex = new RegExp(searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-                 descriptionHtml = descriptionHtml.replace(regex, `<mark class="bg-yellow-200 px-1 rounded">${searchTerm}</mark>`);
-            }
-
-            // 處理稅率繼承
-            function findParentRate(items, currentItem) {
-                if (currentItem.general && currentItem.general !== '') {
-                    return currentItem.general;
-                }
-
-                // 找出所有可能的父項
-                const currentIndent = parseInt(currentItem.indent || '0');
-                const parentItems = items.filter(i => 
-                    i.htsno === currentItem.htsno.split('.').slice(0, -1).join('.') && 
-                    parseInt(i.indent || '0') < currentIndent
-                );
-
-                // 按縮排層級排序，找到最近的父項
-                const parent = parentItems.sort((a, b) => 
-                    parseInt(b.indent || '0') - parseInt(a.indent || '0')
-                )[0];
-
-                return parent ? (parent.general || '') : '';
-            }
-
-            // 獲取實際稅率
-            const actualRate = item.general || findParentRate(window.currentSearchResults || [], item);
-
-            // 處理註腳
-            const footnotes = item.footnotes?.map((f, footnoteIndex) => {
-                const is232Footnote = f.value?.includes('232') ||
-                                  f.value?.includes('9903.80') ||
-                                  f.value?.includes('9903.85');
-                                                  
-                // 尋找HTSUS代碼
-                const htsMatches = f.value.match(/99\d{2}\.\d{2}\.\d{2}/g) || [];
-                let processedValue = f.value;
-                let lastIndex = 0;
-                let parts = [];
-                
-                // 更精確的替換HTSUS代碼
-                htsMatches.forEach((code, codeIndex) => {
-                    const codeIndex2 = f.value.indexOf(code, lastIndex);
-                    if (codeIndex2 !== -1) {
-                        // 添加代碼前的文字
-                        if (codeIndex2 > lastIndex) {
-                            parts.push(esc(f.value.substring(lastIndex, codeIndex2)));
-                        }
-                        
-                        // 生成唯一ID
-                        const uniqueId = `footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}`;
-                        
-                        // 添加連結
-                        parts.push(`<a href="#" class="text-blue-600 hover:text-blue-800 footnote-link" data-hts="${code}" data-detail-id="${uniqueId}">${code}</a>`);
-                        
-                        lastIndex = codeIndex2 + code.length;
-                    }
-                });
-                
-                // 添加剩餘的文字
-                if (lastIndex < f.value.length) {
-                    parts.push(esc(f.value.substring(lastIndex)));
-                }
-                
-                processedValue = parts.join('');
-
-                return `
-                    <div class="footnote-container relative">
-                        <div class="text-xs ${is232Footnote ? 'text-red-600 font-medium' : 'text-gray-600'} mt-1">
-                            <span class="font-medium">${esc(f.columns.join(', '))}:</span>
-                            ${is232Footnote ? '🔔 ' : ''}${processedValue}
-                        </div>
-                        ${htsMatches.map((code, codeIndex) => `
-                            <div id="footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}"
-                                 class="footnote-details mt-2 ml-4 hidden">
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }).join('') || '';
-
-            // 處理單位
-            const units = item.units?.length 
-                ? `<div class="text-sm text-gray-600 mt-2">單位: ${esc(item.units.join(', '))}</div>` 
-                : '';
-
-            card.innerHTML = `
-                <div style="padding-left:${indentPx}px;">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-grow">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <p class="font-semibold text-lg">
-                                    <a class="text-blue-600 hover:text-blue-800" href="${usitcLink(item.htsno)}" target="_blank" rel="noopener noreferrer">
-                                        ${esc(item.htsno)}
-                                        ${item.statisticalSuffix ? `<span class="text-gray-500 text-sm">.${esc(item.statisticalSuffix)}</span>` : ''}
-                                    </a>
-                                </p>
-                                ${check232Applicability(item, window.currentSearchResults) ? `
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        232條款相關項目
-                                    </span>
-                                ` : ''}
-                            </div>
-                            <p class="text-gray-800 mt-1">${descriptionHtml}</p>
-                        </div>
-                        <div class="text-xs bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                            縮排等級: ${esc(item.indent || '0')}
-                        </div>
-                    </div>
-
-                    ${units}
-
-                    <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                            <div>
-                                <p class="font-medium text-gray-500">第一欄 (普通)</p>
-                                <p class="text-gray-700">
-                                    ${esc(actualRate || '—')}
-                                    ${item.general === '' ? '<span class="text-xs text-gray-500">(繼承自父項)</span>' : ''}
-                                    ${(itemIs232Related && itemGeneralTotal > 0) ? 
-                                        `<span class="text-xs text-red-600 ml-2">
-                                            → ${formatRate(itemGeneralTotal)} 
-                                            (含232條款)
-                                        </span>` 
-                                        : ''}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-500">第一欄 (特殊)</p>
-                                <p class="text-gray-700">${esc(item.special ?? '—')}</p>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-500">第二欄</p>
-                                <p class="text-gray-700">
-                                    ${esc(item.other ?? item.col2 ?? '—')}
-                                    ${(itemIs232Related && itemOtherTotal > parseRate(item.other)) ? 
-                                        `<span class="text-xs text-red-600 ml-2">
-                                            → ${formatRate(itemOtherTotal)} 
-                                            (含232條款)
-                                        </span>` 
-                                        : ''}
-                                </p>
-                            </div>
-                        </div>
-
-                        ${item.quotaQuantity ? 
-                            `<div class="mt-2 text-sm">
-                                <p class="font-medium text-gray-500">配額數量</p>
-                                <p class="text-gray-700">${esc(item.quotaQuantity)}</p>
-                            </div>` : ''
-                        }
-
-                        ${item.additionalDuties ? 
-                            `<div class="mt-2 text-sm">
-                                <p class="font-medium text-gray-500">額外關稅</p>
-                                <p class="text-gray-700">${esc(item.additionalDuties)}</p>
-                            </div>` : ''
-                        }
-
-                        ${footnotes ? 
-                            `<div class="mt-3 pt-3 border-t border-dashed border-gray-200">
-                                <p class="font-medium text-gray-500 text-sm mb-1">註腳說明</p>
-                                ${footnotes}
-                            </div>` : ''
-                        }
-                    </div>
-                </div>`;
-            fragment.appendChild(card);
-        });
-        resultsContainer.appendChild(fragment);
+    if (!items || items.length === 0) {
+        resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">找不到符合條件的結果，請嘗試其他關鍵字。</p></div>`;
+        return;
     }
 
-    async function performApiSearch() {
+    const searchTerm = searchInput.value.trim();
+    const batchSize = 20;
+    let index = 0;
+
+    function createCard(item) {
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-gray-200 rounded-lg p-4 transition-all hover:bg-gray-50 hover:border-blue-300';
+        const indentPx = (Number(item.indent) || 0) * 20;
+
+        const itemIs232Related = check232Applicability(item, items);
+        const { generalTotal: itemGeneralTotal, otherTotal: itemOtherTotal } = calculateTotalRates(item, items);
+
+        let descriptionHtml = esc(item.description || '');
+        if (searchTerm) {
+            const regex = new RegExp(searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+            descriptionHtml = descriptionHtml.replace(regex, `<mark class="bg-yellow-200 px-1 rounded">${searchTerm}</mark>`);
+        }
+
+        function findParentRate(items, currentItem) {
+            if (currentItem.general && currentItem.general !== '') {
+                return currentItem.general;
+            }
+
+            const currentIndent = parseInt(currentItem.indent || '0');
+            const parentItems = items.filter(i =>
+                i.htsno === currentItem.htsno.split('.').slice(0, -1).join('.') &&
+                parseInt(i.indent || '0') < currentIndent
+            );
+
+            const parent = parentItems.sort((a, b) =>
+                parseInt(b.indent || '0') - parseInt(a.indent || '0')
+            )[0];
+
+            return parent ? (parent.general || '') : '';
+        }
+
+        const actualRate = item.general || findParentRate(window.currentSearchResults || [], item);
+
+        const footnotes = item.footnotes?.map((f, footnoteIndex) => {
+            const is232Footnote = f.value?.includes('232') ||
+                                  f.value?.includes('9903.80') ||
+                                  f.value?.includes('9903.85');
+
+            const htsMatches = f.value.match(/99\d{2}\.\d{2}\.\d{2}/g) || [];
+            let processedValue = f.value;
+            let lastIndex = 0;
+            let parts = [];
+
+            htsMatches.forEach((code, codeIndex) => {
+                const codeIndex2 = f.value.indexOf(code, lastIndex);
+                if (codeIndex2 !== -1) {
+                    if (codeIndex2 > lastIndex) {
+                        parts.push(esc(f.value.substring(lastIndex, codeIndex2)));
+                    }
+
+                    const uniqueId = `footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}`;
+
+                    parts.push(`<a href="#" class="text-blue-600 hover:text-blue-800 footnote-link" data-hts="${code}" data-detail-id="${uniqueId}">${code}</a>`);
+
+                    lastIndex = codeIndex2 + code.length;
+                }
+            });
+
+            if (lastIndex < f.value.length) {
+                parts.push(esc(f.value.substring(lastIndex)));
+            }
+
+            processedValue = parts.join('');
+
+            return `
+                <div class="footnote-container relative">
+                    <div class="text-xs ${is232Footnote ? 'text-red-600 font-medium' : 'text-gray-600'} mt-1">
+                        <span class="font-medium">${esc(f.columns.join(', '))}:</span>
+                        ${is232Footnote ? '🔔 ' : ''}${processedValue}
+                    </div>
+                    ${htsMatches.map((code, codeIndex) => `
+                        <div id="footnote-${item.htsno.replace(/\./g, '-')}-${footnoteIndex}-${codeIndex}"
+                             class="footnote-details mt-2 ml-4 hidden">
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }).join('') || '';
+
+        const units = item.units?.length
+            ? `<div class="text-sm text-gray-600 mt-2">單位: ${esc(item.units.join(', '))}</div>`
+            : '';
+
+        card.innerHTML = `
+            <div style="padding-left:${indentPx}px;">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-semibold text-lg">
+                                <a class="text-blue-600 hover:text-blue-800" href="${usitcLink(item.htsno)}" target="_blank" rel="noopener noreferrer">
+                                    ${esc(item.htsno)}
+                                    ${item.statisticalSuffix ? `<span class="text-gray-500 text-sm">.${esc(item.statisticalSuffix)}</span>` : ''}
+                                </a>
+                            </p>
+                            ${check232Applicability(item, window.currentSearchResults) ? `
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    232條款相關項目
+                                </span>
+                            ` : ''}
+                        </div>
+                        <p class="text-gray-800 mt-1">${descriptionHtml}</p>
+                    </div>
+                    <div class="text-xs bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                        縮排等級: ${esc(item.indent || '0')}
+                    </div>
+                </div>
+
+                ${units}
+
+                <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div>
+                            <p class="font-medium text-gray-500">第一欄 (普通)</p>
+                            <p class="text-gray-700">
+                                ${esc(actualRate || '—')}
+                                ${item.general === '' ? '<span class="text-xs text-gray-500">(繼承自父項)</span>' : ''}
+                                ${(itemIs232Related && itemGeneralTotal > 0) ?
+                                    `<span class="text-xs text-red-600 ml-2">
+                                        → ${formatRate(itemGeneralTotal)}
+                                        (含232條款)
+                                    </span>`
+                                    : ''}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-500">第一欄 (特殊)</p>
+                            <p class="text-gray-700">${esc(item.special ?? '—')}</p>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-500">第二欄</p>
+                            <p class="text-gray-700">
+                                ${esc(item.other ?? item.col2 ?? '—')}
+                                ${(itemIs232Related && itemOtherTotal > parseRate(item.other)) ?
+                                    `<span class="text-xs text-red-600 ml-2">
+                                        → ${formatRate(itemOtherTotal)}
+                                        (含232條款)
+                                    </span>`
+                                    : ''}
+                            </p>
+                        </div>
+                    </div>
+
+                    ${item.quotaQuantity ?
+                        `<div class="mt-2 text-sm">
+                            <p class="font-medium text-gray-500">配額數量</p>
+                            <p class="text-gray-700">${esc(item.quotaQuantity)}</p>
+                        </div>` : ''
+                    }
+
+                    ${item.additionalDuties ?
+                        `<div class="mt-2 text-sm">
+                            <p class="font-medium text-gray-500">額外關稅</p>
+                            <p class="text-gray-700">${esc(item.additionalDuties)}</p>
+                        </div>` : ''
+                    }
+
+                    ${footnotes ?
+                        `<div class="mt-3 pt-3 border-t border-dashed border-gray-200">
+                            <p class="font-medium text-gray-500 text-sm mb-1">註腳說明</p>
+                            ${footnotes}
+                        </div>` : ''
+                    }
+                </div>
+            </div>`;
+        return card;
+    }
+
+    function renderBatch() {
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < batchSize && index < items.length; i++, index++) {
+            fragment.appendChild(createCard(items[index]));
+        }
+        resultsContainer.appendChild(fragment);
+        if (index < items.length) {
+            requestAnimationFrame(renderBatch);
+        }
+    }
+
+    renderBatch();
+}
+async function performApiSearch() {
         const searchTerm = searchInput.value.trim();
-        const show232Only = document.getElementById('show232Only').checked;
+        const show232Only = show232OnlyCheckbox.checked;
 
         if (searchTerm.length < 2) {
             const message = show232Only
                 ? '請輸入至少 2 個字元以搜尋 232 條款相關項目。'
                 : '請輸入至少 2 個字元以進行搜尋。';
             resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-gray-500">${message}</p></div>`;
+            return;
+        }
+
+        const cacheKey = { searchTerm, show232Only };
+        const cachedResults = cache.get(cacheKey);
+        if (cachedResults) {
+            window.currentSearchResults = cachedResults;
+            renderResults(cachedResults);
             return;
         }
 
@@ -415,8 +426,9 @@ function initializeHtsApiApp() {
             const filteredResults = show232Only
                 ? data.results.filter(item => check232Applicability(item, data.results))
                 : data.results;
-            // 儲存所有結果
+            // 儲存所有結果並快取
             window.currentSearchResults = filteredResults;
+            cache.set(cacheKey, filteredResults);
             renderResults(filteredResults);
         } catch (error) {
             console.error("API Search Error:", error);
@@ -433,6 +445,9 @@ function initializeHtsApiApp() {
             performApiSearch();
         }
     });
+    const debouncedSearch = debounce ? debounce(performApiSearch, 500) : performApiSearch;
+    searchInput.addEventListener('input', debouncedSearch);
+    show232OnlyCheckbox.addEventListener('change', debouncedSearch);
 
     // 處理註腳中HTSUS代碼的點擊事件
     let lastClickedLink = null;

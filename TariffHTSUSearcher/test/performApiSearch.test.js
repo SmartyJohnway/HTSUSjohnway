@@ -12,7 +12,8 @@ function createElement() {
       remove() {},
       contains() { return false; }
     },
-    addEventListener() {}
+    addEventListener() {},
+    appendChild() {}
   };
 }
 
@@ -28,10 +29,12 @@ const elements = {
 
 global.document = {
   getElementById: (id) => elements[id],
-  addEventListener() {}
+  addEventListener() {},
+  createDocumentFragment: () => ({ appendChild() {} }),
+  createElement: () => createElement()
 };
 
-const { initializeHtsApiApp } = require('../js/app2.js');
+const { initializeHtsApiApp } = require('../src/index.js');
 const { performApiSearch } = initializeHtsApiApp();
 
 elements.htsSearchInput.value = 'abcd';
