@@ -1,6 +1,13 @@
 {
   "name": "tariff-htsus-app2",
   "type": "module",
-  "scripts": { "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand" },
-  "devDependencies": { "jest": "^29.7.0" }
+  "scripts": {
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "jest": "^29.7.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.4"
+  }
 }
