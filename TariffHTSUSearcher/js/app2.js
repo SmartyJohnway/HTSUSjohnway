@@ -416,6 +416,9 @@ async function performApiSearch() {
                 try {
                     const response = await fetch(url);
                     const contentType = response.headers.get('content-type') || '';
+                    if (response.status >= 500 && response.status < 600) {
+                        return { error: 'Bad Gateway' };
+                    }
                     if (!response.ok || !contentType.includes('application/json')) {
                         throw new Error('Proxy returned non-JSON');
                     }
@@ -430,6 +433,20 @@ async function performApiSearch() {
 
         try {
             const data = await fetchWithBackoff(proxyUrl);
+            if (data.error) {
+                const errorMessage = '查詢服務暫時無法使用，請稍後再試。';
+                resultsContainer.innerHTML = '';
+                let note = document.getElementById('htsErrorNote');
+                if (!note) {
+                    note = document.createElement('div');
+                    note.id = 'htsErrorNote';
+                    note.className = 'text-center text-red-600 py-2';
+                    statusContainer.appendChild(note);
+                }
+                note.textContent = errorMessage;
+                note.classList.remove('hidden');
+                return;
+            }
             // 確保 data.results 是陣列
             if (!Array.isArray(data.results)) {
                 throw new Error('API 回傳的資料格式不正確');
