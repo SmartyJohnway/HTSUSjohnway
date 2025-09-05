@@ -1,11 +1,11 @@
-import { safe } from "../../infra/guard.js";
-import cache from "../../infra/cache.js";
+import { safe } from "../../infra/guard.js";␊
+import cache from "../../infra/cache.js";␊
+import nodeFetch from "node-fetch";
 
 // Polyfill `fetch` for older Node.js versions
-if (typeof fetch === 'undefined') {
-  const { default: nodeFetch } = await import('node-fetch');
-  globalThis.fetch = nodeFetch;
-}
+if (typeof globalThis.fetch === "undefined") {
+  globalThis.fetch = nodeFetch;␊
+}␊
 
 // This is a Netlify Function.
 // It acts as a proxy to bypass CORS issues when calling the USITC API from the browser.
