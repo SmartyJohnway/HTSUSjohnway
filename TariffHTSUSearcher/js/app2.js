@@ -1,4 +1,5 @@
 import { safe as safeCall } from "../infra/guard.js";
+import cache from "../infra/cache.js";
 
 // --- APP 2: HTSUS API TARIFF DATABASE ---
 function initializeHtsApiApp() {
