@@ -1,0 +1,23 @@
+{
+  "docs": [
+    {
+      "id": "HTS-9903.81.90",
+      "type": "hts",
+      "title": "9903.81.90",
+      "text": "Section 232 steel derivatives; ERW steel pipe; Chapter 99 measures"
+    },
+    {
+      "id": "FR-2025-IFR",
+      "type": "fr",
+      "title": "Interim Final Rule: Section 232 Inclusions Process",
+      "text": "BIS establishes procedures for Section 232 inclusions"
+    },
+    {
+      "id": "REGS-DOCKET",
+      "type": "regs",
+      "title": "BIS Docket on Section 232",
+      "text": "Public comments related to HTS 9903 and exclusions"
+    }
+  ],
+  "updatedAt": "2025-09-04T15:16:13.292198Z"
+}

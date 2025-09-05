@@ -1,0 +1,14 @@
+[functions]
+  node_bundler = "esbuild"
+
+[functions."refresh-hts"]
+  schedule = "0 3 * * *"
+
+[functions."refresh-fr232"]
+  schedule = "30 3 * * *"
+
+[functions."refresh-regs232"]
+  schedule = "0 4 * * *"
+
+[functions."build-search-index"]
+  schedule = "0 5 * * *"
