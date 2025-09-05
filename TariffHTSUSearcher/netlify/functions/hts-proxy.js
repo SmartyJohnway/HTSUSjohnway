@@ -101,7 +101,12 @@ async function htsProxy(event, context) {
   log('API Response:', JSON.stringify(json, null, 2));
 
   // Validate schema
-  if (!json || !Array.isArray(json.results)) {
+  let results;
+  if (Array.isArray(json)) {
+    results = json;
+  } else if (Array.isArray(json.results)) {
+    results = json.results;
+  } else {
     return {
       statusCode: 502,
       headers: { 'Content-Type': 'application/json' },
@@ -110,9 +115,9 @@ async function htsProxy(event, context) {
   }
 
   const formattedData = {
-    results: json.results,
-    message: json.results.length > 0
-      ? `Found ${json.results.length} results`
+    results,
+    message: results.length > 0
+      ? `Found ${results.length} results`
       : `No results found for keyword: ${keyword}`
   };
 
