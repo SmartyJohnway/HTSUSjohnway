@@ -1,9 +1,15 @@
 import { safe } from "../../infra/guard.js";
 import cache from "../../infra/cache.js";
 
+// Polyfill `fetch` for older Node.js versions
+if (typeof fetch === 'undefined') {
+  const { default: nodeFetch } = await import('node-fetch');
+  globalThis.fetch = nodeFetch;
+}
+
 // This is a Netlify Function.
 // It acts as a proxy to bypass CORS issues when calling the USITC API from the browser.
-// Uses the native fetch available in Node 18+.
+// Uses the native fetch available in Node 18+ with a fallback polyfill for older runtimes.
 
 const log = (...args) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -11,7 +17,7 @@ const log = (...args) => {
   }
 };
 
-async function handler(event, context) {
+async function htsProxy(event, context) {
   // Log incoming request details for debugging
   log('Incoming URL:', event.rawUrl || event.path);
   log('Incoming params:', event.queryStringParameters);
@@ -127,7 +133,7 @@ async function handler(event, context) {
   };
 }
 
-export const handler = safe(handler, (error) => {
+export const handler = safe(htsProxy, (error) => {
   console.error('Proxy Error:', error);
   return {
     statusCode: 500,
