@@ -36,6 +36,11 @@ function initializeApp() {
     } else {
         console.error('initializeHtsApiApp is not available');
     }
+    if (typeof initializeSourcesSuite === 'function') {
+        initializeSourcesSuite();
+    } else {
+        console.error('initializeSourcesSuite is not available');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);

@@ -145,6 +145,19 @@
                         <a href="https://www.federalregister.gov/documents/2025/08/19/2025-15819/adoption-and-procedures-of-the-section-232-steel-and-aluminum-tariff-inclusions-process" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">聯邦公報官方公告</p><p class="text-sm text-gray-600">美國政府在《聯邦公報》上發布的正式法律文件，確認新增407項衍生品清單。</p></a>
                     </div>
                 </div>
+                 <!-- Sources Suite Tabs -->
+                 <section id="sources-suite" class="mt-6">
+                 <div class="border-b flex gap-2 text-sm">
+                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app1">App1 來源入口</button>
+                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app2">App2 多來源搜尋</button>
+                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app3">App3 API/CSV</button>
+                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app4">App4 索引搜尋(Beta)</button>
+                 </div>
+                 <div id="suite-app1" class="py-4"></div>
+                 <div id="suite-app2" class="py-4 hidden"></div>
+                 <div id="suite-app3" class="py-4 hidden"></div>
+                 <div id="suite-app4" class="py-4 hidden"></div>
+                 </section>
             </div>
         </div>
 
@@ -158,6 +171,7 @@
     <script src="js/infra/api.js"></script>
     <script type="module" src="js/app1.js"></script>
     <script type="module" src="js/app2.js"></script>
+    <script type="module" src="js/sources-suite/sources-suite.js"></script>
     <script src="js/main.js"></script>
 
 </body>
