@@ -24,7 +24,11 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
     const indentPx = (Number(item.indent) || 0) * 20;
 
     const itemIs232Related = check232Applicability(item, items);
-    const { generalTotal: itemGeneralTotal, otherTotal: itemOtherTotal } = calculateTotalRates(item, items);
+    const {
+      generalTotal: itemGeneralTotal,
+      otherTotal: itemOtherTotal,
+      hasAdditionalDuty
+    } = calculateTotalRates(item, items);
 
     const searchTerm = searchInput.value.trim();
     let descriptionHtml = esc(item.description || '');
@@ -48,6 +52,10 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
     }
 
     const actualRate = item.general || findParentRate(items, item);
+    const baseGeneralRate = parseRate(actualRate);
+    const baseOtherRate = parseRate(item.other);
+    const showAdditionalDuty = itemIs232Related || hasAdditionalDuty;
+    const additionalDutyText = itemIs232Related ? '含232條款' : '含額外關稅';
 
     const footnotes = item.footnotes?.map((f, footnoteIndex) => {
       const is232Footnote = f.value?.includes('232') ||
@@ -125,10 +133,10 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
                                 <p class="text-gray-700">
                                     ${esc(actualRate || '—')}
                                     ${item.general === '' ? '<span class="text-xs text-gray-500">(繼承自父項)</span>' : ''}
-                                    ${(itemIs232Related && itemGeneralTotal > 0) ?
+                                    ${(showAdditionalDuty && itemGeneralTotal > baseGeneralRate) ?
                                         `<span class="text-xs text-red-600 ml-2">
                                             → ${formatRate(itemGeneralTotal)}
-                                            (含232條款)
+                                            (${additionalDutyText})
                                         </span>` : ''}
                                 </p>
                             </div>
@@ -140,10 +148,10 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
                                 <p class="font-medium text-gray-500">第二欄</p>
                                 <p class="text-gray-700">
                                     ${esc(item.other ?? item.col2 ?? '—')}
-                                    ${(itemIs232Related && itemOtherTotal > parseRate(item.other)) ?
+                                    ${(showAdditionalDuty && itemOtherTotal > baseOtherRate) ?
                                         `<span class="text-xs text-red-600 ml-2">
                                             → ${formatRate(itemOtherTotal)}
-                                            (含232條款)
+                                            (${additionalDutyText})
                                         </span>` : ''}
                                 </p>
                             </div>

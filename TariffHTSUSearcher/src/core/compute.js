@@ -34,24 +34,24 @@ export function calculateTotalRates(item, allItems) {
     }
   });
 
-  let totalGeneralRate = baseGeneralRate;
-  let totalOtherRate = baseOtherRate;
+  let totalGeneralRate = baseGeneralRate + additionalGeneralRate;
+  let totalOtherRate = baseOtherRate + additionalOtherRate;
 
   if (hasGeneral232Note) {
     const general232Item = allItems.find(i => i.htsno === '9903.91.01');
     if (general232Item) {
-      totalGeneralRate = 25;
+      totalGeneralRate = 25 + additionalGeneralRate;
     }
     const other232Item = allItems.find(i => i.htsno === '9903.90.09');
     if (other232Item) {
-      totalOtherRate = baseOtherRate + 70;
+      totalOtherRate = baseOtherRate + 70 + additionalOtherRate;
     }
   }
 
   return {
     generalTotal: totalGeneralRate,
     otherTotal: totalOtherRate,
-    hasAdditionalDuty: additionalGeneralRate > 0 || additionalOtherRate > 0
+    hasAdditionalDuty: hasGeneral232Note || additionalGeneralRate > 0 || additionalOtherRate > 0
   };
 }
 
