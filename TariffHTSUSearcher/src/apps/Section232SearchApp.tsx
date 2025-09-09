@@ -697,7 +697,7 @@ export default function Section232SearchApp() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900">
       <Header />
       <main className="max-w-6xl mx-auto px-4 pt-4 pb-14">
-        <nav className="mb-4 border-b flex overflow-x-auto">
+        <nav className="mb-4 border-b flex flex-wrap gap-2 overflow-x-auto">
           {tabs.map((t) => (
             <button
               key={t.key}
