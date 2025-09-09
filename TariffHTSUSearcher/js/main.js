@@ -1,4 +1,3 @@
-import { initializeSourcesSuite } from './sources-suite/sources-suite.js';
 
 // --- GLOBAL ELEMENTS & STATE ---
 const tabs = document.querySelectorAll('.tab-btn');
@@ -39,7 +38,6 @@ function initializeApp() {
         console.error('initializeHtsApiApp is not available');
     }
 
-    initializeSourcesSuite();
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);

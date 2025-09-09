@@ -512,9 +512,9 @@ function App4() {
   );
 }
 
-// === App5：貿易數據儀表板 (NEW) ===
+// === App5：貿易數據儀表板 ===
 function App5() {
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey] = useState<string>(process.env.DATAWEB_API_KEY || "");
   const [htsCode, setHtsCode] = useState("730630"); // 範例 HTS (鋼管)
   const [country, setCountry] = useState("5800"); // 範例國家 (台灣)
   const [year, setYear] = useState(new Date().getFullYear() - 1);
@@ -524,7 +524,7 @@ function App5() {
 
   const handleQuery = async () => {
     if (!apiKey) {
-      setError("請輸入您的 USITC DataWeb API 金鑰。");
+      setError("尚未配置 DataWeb API 金鑰。");
       return;
     }
     setLoading(true);
@@ -578,7 +578,7 @@ function App5() {
       <div className="mb-4">
         <div className="text-lg font-semibold mb-2">App 5：貿易數據儀表板</div>
         <p className="text-sm text-gray-600">
-          使用您的 USITC DataWeb API 金鑰，查詢特定 HTSUS 碼的詳細貿易統計數據。這可以幫助您量化 232 條款對特定產品的影響。
+          使用預設的 USITC DataWeb API 金鑰（部署時由環境變數注入），查詢特定 HTSUS 碼的詳細貿易統計數據。這可以幫助您量化 232 條款對特定產品的影響。
           <a href="https://www.usitc.gov/applications/dataweb/api/dataweb_query_api.html" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline ml-2">
             (API 文件)
           </a>
@@ -586,17 +586,12 @@ function App5() {
       </div>
 
       <div className="p-5 rounded-2xl border bg-white shadow space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">您的 DataWeb API 金鑰</label>
-          <input 
-            type="password" 
-            value={apiKey} 
-            onChange={(e) => setApiKey(e.target.value)} 
-            placeholder="在此貼上您的 API 金鑰"
-            className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        
+        {!apiKey && (
+          <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-800">
+            未設定 API 金鑰，請在 Netlify 環境變數 DATAWEB_API_KEY 中配置。
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">HTSUS 產品碼 (最多 6 位)</label>

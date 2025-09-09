@@ -2,7 +2,7 @@
 
 [build]
   base    = "TariffHTSUSearcher"   # path within the repo
-  command = "echo 'No build command required'"
+  command = "npm run build"
   publish = "."
 
 [build.environment]
