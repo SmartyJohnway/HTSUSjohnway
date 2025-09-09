@@ -17,6 +17,11 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
     return;
   }
 
+  const summary = document.createElement('div');
+  summary.className = 'text-sm text-gray-600 mb-4';
+  summary.textContent = `共 ${items.length} 項結果`;
+  resultsContainer.appendChild(summary);
+
   const fragment = document.createDocumentFragment();
   items.forEach(item => {
     const card = document.createElement('div');
@@ -24,7 +29,7 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
     const indentPx = (Number(item.indent) || 0) * 20;
 
     const itemIs232Related = check232Applicability(item, items);
-    const {
+    const { 
       generalTotal: itemGeneralTotal,
       otherTotal: itemOtherTotal,
       hasAdditionalDuty
@@ -32,8 +37,10 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
 
     const searchTerm = searchInput.value.trim();
     let descriptionHtml = esc(item.description || '');
+    let htsHtml = esc(item.htsno);
     if (searchTerm) {
       descriptionHtml = highlightTerm(descriptionHtml, searchTerm);
+      htsHtml = highlightTerm(htsHtml, searchTerm);
     }
 
     function findParentRate(list, currentItem) {
@@ -107,7 +114,7 @@ export function renderCards(items, { searchInput, resultsContainer, welcomeMessa
                             <div class="flex items-center gap-2 flex-wrap">
                                 <p class="font-semibold text-lg">
                                     <a class="text-blue-600 hover:text-blue-800" href="${usitcLink(item.htsno)}" target="_blank" rel="noopener noreferrer">
-                                        ${esc(item.htsno)}
+                                        ${htsHtml}
                                         ${item.statisticalSuffix ? `<span class="text-gray-500 text-sm">.${esc(item.statisticalSuffix)}</span>` : ''}
                                     </a>
                                 </p>
