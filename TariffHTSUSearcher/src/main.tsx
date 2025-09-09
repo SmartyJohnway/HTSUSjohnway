@@ -11,13 +11,13 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <SearchProvider>
+      <NotificationProvider>
         <ResearchTrailProvider>
-          <NotificationProvider>
+          <SearchProvider>
             <App />
-          </NotificationProvider>
+          </SearchProvider>
         </ResearchTrailProvider>
-      </SearchProvider>
+      </NotificationProvider>
     </React.StrictMode>
   );
 }
