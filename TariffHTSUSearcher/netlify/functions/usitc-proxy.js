@@ -21,7 +21,7 @@ async function usitcProxy(event) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+  const timeoutId = setTimeout(() => controller.abort(), 30_000); // 增加超時時間
   let response;
   try {
     response = await fetch(USITC_API_URL, {
@@ -36,6 +36,7 @@ async function usitcProxy(event) {
     });
   } catch (err) {
     clearTimeout(timeoutId);
+    console.error("USITC API fetch error:", err);
     return {
       statusCode: 502,
       headers: { "Content-Type": "application/json" },

@@ -20,3 +20,5 @@ Gemfile.lock
 # Node dependencies
 node_modules/
 TariffHTSUSearcher/node_modules/
+
+# Build artifacts
