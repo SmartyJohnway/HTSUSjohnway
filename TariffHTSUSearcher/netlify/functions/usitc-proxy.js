@@ -1,42 +1,84 @@
-export async function handler(event, context) {
-    const apiKey = process.env.USITC_API_KEY;
-    const usitcApiUrl = "https://datawebws.usitc.gov/dataweb/api/v2/report2/runReport";
+import { safe } from "../../infra/guard.js";
 
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            body: '只接受 POST 請求'
-        };
-    }
+const USITC_API_URL = "https://datawebws.usitc.gov/dataweb/api/v2/report2/runReport";
 
-    try {
-        const response = await fetch(usitcApiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: event.body
-        });
+async function usitcProxy(event) {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      headers: { Allow: "POST", "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Method Not Allowed" })
+    };
+  }
 
-        const data = await response.json();
+  const apiKey = process.env.USITC_API_KEY;
+  if (!apiKey) {
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Missing USITC_API_KEY" })
+    };
+  }
 
-        if (!response.ok) {
-            return {
-                statusCode: response.status,
-                body: JSON.stringify(data)
-            };
-        }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+  let response;
+  try {
+    response = await fetch(USITC_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "User-Agent": "Tariff-Query-App/1.0"
+      },
+      body: event.body,
+      signal: controller.signal
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return {
+      statusCode: 502,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Failed to reach USITC API", details: err.message })
+    };
+  }
+  clearTimeout(timeoutId);
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify(data)
-        };
+  const text = await response.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    return {
+      statusCode: 502,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Invalid JSON response from USITC API", details: err.message, raw: text })
+    };
+  }
 
-    } catch (error) {
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: '代理函數內部錯誤', details: error.message })
-        };
-    }
+  if (!response.ok) {
+    return {
+      statusCode: response.status,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    };
+  }
+
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type"
+    },
+    body: JSON.stringify(data)
+  };
 }
+
+export const handler = safe(usitcProxy, (error) => {
+  return {
+    statusCode: 500,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ error: "Proxy error", details: error.message })
+  };
+});
