@@ -6,7 +6,7 @@ import React, { useMemo, useState, useEffect } from "react";
  * - App2：多來源搜尋（一次輸入關鍵字 → 產生多站最佳化搜尋連結）
  * - App3：API/CSV 直通車（官方 API、批次下載、文件入口，含快捷 URL）
  * - App4：索引搜尋 Beta（移除外部依賴，使用內建 MinimalSearchEngine）
- * - App5：貿易數據儀表板（整合 USITC DataWeb API，需使用者提供金鑰）
+ * - App5：貿易數據儀表板（整合 USITC DataWeb API，金鑰存於伺服器端）
  * - App6：重要公告連結（精選最關鍵的官方文件與專頁）
  */
 
@@ -514,7 +514,6 @@ function App4() {
 
 // === App5：貿易數據儀表板 ===
 function App5() {
-  const [apiKey] = useState<string>(process.env.DATAWEB_API_KEY || "");
   const [htsCode, setHtsCode] = useState("730630"); // 範例 HTS (鋼管)
   const [country, setCountry] = useState("5800"); // 範例國家 (台灣)
   const [year, setYear] = useState(new Date().getFullYear() - 1);
@@ -523,15 +522,11 @@ function App5() {
   const [results, setResults] = useState<any | null>(null);
 
   const handleQuery = async () => {
-    if (!apiKey) {
-      setError("尚未配置 DataWeb API 金鑰。");
-      return;
-    }
     setLoading(true);
     setError(null);
     setResults(null);
 
-    const API_ENDPOINT = "https://datawebws.usitc.gov/api/query";
+    const API_ENDPOINT = "/.netlify/functions/usitc-proxy";
     const queryPayload = {
       "source": "N", // N for NTR/Normal Trade Relations
       "time": {
@@ -553,8 +548,7 @@ function App5() {
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(queryPayload)
       });
@@ -578,7 +572,7 @@ function App5() {
       <div className="mb-4">
         <div className="text-lg font-semibold mb-2">App 5：貿易數據儀表板</div>
         <p className="text-sm text-gray-600">
-          使用預設的 USITC DataWeb API 金鑰（部署時由環境變數注入），查詢特定 HTSUS 碼的詳細貿易統計數據。這可以幫助您量化 232 條款對特定產品的影響。
+          透過 Netlify Function 在伺服器端存放的 USITC DataWeb API 金鑰，查詢特定 HTSUS 碼的詳細貿易統計數據。這可以幫助您量化 232 條款對特定產品的影響。
           <a href="https://www.usitc.gov/applications/dataweb/api/dataweb_query_api.html" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline ml-2">
             (API 文件)
           </a>
@@ -586,12 +580,6 @@ function App5() {
       </div>
 
       <div className="p-5 rounded-2xl border bg-white shadow space-y-4">
-        {!apiKey && (
-          <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-800">
-            未設定 API 金鑰，請在 Netlify 環境變數 DATAWEB_API_KEY 中配置。
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">HTSUS 產品碼 (最多 6 位)</label>

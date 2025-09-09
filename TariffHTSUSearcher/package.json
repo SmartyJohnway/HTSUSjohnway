@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand",
-    "build:section232": "esbuild src/apps/main-section232.tsx --bundle --minify --format=esm --outfile=assets/section232-app.js --define:process.env.DATAWEB_API_KEY=\\\"${DATAWEB_API_KEY}\\\"",
+    "build:section232": "esbuild src/apps/main-section232.tsx --bundle --minify --format=esm --outfile=assets/section232-app.js",
     "build": "npm run build:section232"
   },
   "dependencies": {
