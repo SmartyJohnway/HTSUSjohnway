@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TariffQuery from './components/TariffQuery';
 import HtsDatabase from './components/HtsDatabase';
 import Section232SearchApp from './apps/Section232SearchApp';
 import { useSearch } from './context/SearchContext';
+import Button from './components/ui/Button';
+import Modal from './components/ui/Modal';
+import ResearchTrailContent from './components/ResearchTrailContent';
 
 type Tab = 'query' | 'hts' | 'sources';
 
@@ -14,6 +17,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 function App() {
   const { activeTab, setActiveTab } = useSearch();
+  const [isTrailModalOpen, setIsTrailModalOpen] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -39,17 +43,18 @@ function App() {
       <div className="mb-6 border-b border-gray-200">
         <nav className="flex -mb-px space-x-2 md:space-x-6" aria-label="Tabs">
           {TABS.map(tab => (
-            <button
+            <Button
               key={tab.key}
+              variant="ghost"
               onClick={() => setActiveTab(tab.key)}
-              className={`whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg ${
+              className={`whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg rounded-none ${
                 activeTab === tab.key
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500'
               }`}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </nav>
       </div>
@@ -62,8 +67,25 @@ function App() {
       <footer className="text-center mt-12 text-sm text-gray-500">
         <p>資料來源：美國海關暨邊境保衛局(CBP)及商務部(DOC)公告；HTSUS資料庫由USITC API提供。</p>
         <p className="mt-1">本系統僅供參考，最終解釋請以美國官方公告為準。</p>
-        <p className="mt-1">製作者: Johnway</p>
+        <div className="mt-2 flex items-center justify-center gap-2">
+          <span>製作者: Johnway</span>
+          <button
+            onClick={() => setIsTrailModalOpen(true)}
+            className="text-xs text-gray-400 hover:text-blue-600 hover:underline"
+            title="顯示研究軌跡"
+          >
+            (顯示軌跡)
+          </button>
+        </div>
       </footer>
+
+      <Modal
+        isOpen={isTrailModalOpen}
+        onClose={() => setIsTrailModalOpen(false)}
+        title="研究軌跡"
+      >
+        <ResearchTrailContent />
+      </Modal>
     </div>
   );
 }
