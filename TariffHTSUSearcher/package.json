@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "esbuild src/main.tsx --bundle --outfile=dist/main.js --servedir=.",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand",
-    "build": "esbuild src/main.tsx --bundle --minify --format=esm --outfile=dist/main.js"
+    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./dist/tailwind.css",
+    "build": "npm run build:css && esbuild src/main.tsx --bundle --minify --format=esm --outfile=dist/main.js"
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.10",
