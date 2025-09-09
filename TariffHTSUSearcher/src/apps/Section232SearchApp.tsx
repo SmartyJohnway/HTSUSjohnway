@@ -679,22 +679,39 @@ function App6() {
 }
 
 
+type TabKey = "app1" | "app2" | "app3" | "app4" | "app5" | "app6";
+
 export default function Section232SearchApp() {
-  const [tab, setTab] = useState<"app1" | "app2" | "app3" | "app4" | "app5" | "app6">("app1");
+  const [tab, setTab] = useState<TabKey>("app1");
   const [keyword, setKeyword] = useState("Section 232 9903.81.90");
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "app1", label: "App 1：入口" },
+    { key: "app2", label: "App 2：多來源搜尋" },
+    { key: "app3", label: "App 3：API/CSV 直通車" },
+    { key: "app4", label: "App 4：索引搜尋 (Beta)" },
+    { key: "app5", label: "App 5：貿易數據" },
+    { key: "app6", label: "App 6：重要公告" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900">
       <Header />
       <main className="max-w-6xl mx-auto px-4 pt-4 pb-14">
-        <div className="mb-4 flex flex-wrap gap-2">
-          <button onClick={() => setTab("app1")} className={`px-4 py-2 rounded-2xl border ${tab === "app1" ? "bg-black text-white" : "hover:bg-gray-50"}`}>App 1：入口</button>
-          <button onClick={() => setTab("app2")} className={`px-4 py-2 rounded-2xl border ${tab === "app2" ? "bg-black text-white" : "hover:bg-gray-50"}`}>App 2：搜尋</button>
-          <button onClick={() => setTab("app3")} className={`px-4 py-2 rounded-2xl border ${tab === "app3" ? "bg-black text-white" : "hover:bg-gray-50"}`}>App 3：API/CSV 直通車</button>
-          <button onClick={() => setTab("app4")} className={`px-4 py-2 rounded-2xl border ${tab === "app4" ? "bg-black text-white" : "hover:bg-gray-50"}`}>App 4：索引搜尋 (Beta)</button>
-          <button onClick={() => setTab("app5")} className={`px-4 py-2 rounded-2xl border ${tab === "app5" ? "bg-black text-white" : "hover:bg-gray-50"}`}>App 5：貿易數據</button>
-          <button onClick={() => setTab("app6")} className={`px-4 py-2 rounded-2xl border ${tab === "app6" ? "bg-black text-white" : "hover:bg-gray-50"}`}>App 6：重要公告 (New)</button>
-        </div>
+        <nav className="mb-4 border-b flex overflow-x-auto">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                tab === t.key
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-600"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
 
         <div className="rounded-3xl overflow-hidden border bg-white/60">
           {tab === "app1" ? (
