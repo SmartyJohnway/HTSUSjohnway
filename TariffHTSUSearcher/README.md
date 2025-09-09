@@ -27,8 +27,9 @@ If the proxy returns a non‑JSON response the app automatically falls back to t
 ## Deployment (Netlify)
 
 1. Connect the `TariffHTSUSearcher` directory to Netlify.
-2. **Environment variables**  
-   - `REGS_API_KEY` – Regulations.gov v4 API key (required).  
+2. **Environment variables**
+   - `REGS_API_KEY` – Regulations.gov v4 API key (required).
+   - `USITC_API_KEY` – USITC DataWeb API key for App5 (required).
    - (optional) other tokens such as `DATAWEB_TOKEN` if extending data pulls.
 3. **Enable services**  
    - Netlify Functions (see `netlify/functions`)  
