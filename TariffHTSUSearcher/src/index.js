@@ -41,6 +41,11 @@ export function initializeHtsApiApp() {
     const proxyUrl = `${apiBaseUrl}?keyword=${encodeURIComponent(searchTerm)}`;
     const directUrl = `https://hts.usitc.gov/reststop/search?keyword=${encodeURIComponent(searchTerm)}`;
 
+    const existingErrorNote = document.getElementById('htsErrorNote');
+    if (existingErrorNote) {
+      existingErrorNote.classList.add('hidden');
+    }
+
     try {
       let data;
       try {
@@ -51,9 +56,7 @@ export function initializeHtsApiApp() {
         }
         data = await response.json();
       } catch (proxyError) {
-        const response = await fetch(directUrl, {
-          headers: { 'User-Agent': 'Tariff-Query-App/1.0' }
-        });
+        const response = await fetch(directUrl);
         const contentType = response.headers.get('content-type') || '';
         if (!response.ok || !contentType.includes('application/json')) {
           throw new Error('查詢服務暫時無法使用，請稍後再試');
@@ -75,6 +78,15 @@ export function initializeHtsApiApp() {
     } catch (error) {
       console.error("API Search Error:", error);
       resultsContainer.innerHTML = `<div class="text-center py-10"><p class="text-lg text-red-600">查詢服務暫時無法使用，請稍後再試。</p><p class="text-sm text-gray-500 mt-1">${error.message}</p></div>`;
+      let note = document.getElementById('htsErrorNote');
+      if (!note) {
+        note = document.createElement('div');
+        note.id = 'htsErrorNote';
+        note.className = 'text-center text-red-600 py-2';
+        statusContainer.appendChild(note);
+      }
+      note.textContent = '查詢服務暫時無法使用，請稍後再試。';
+      note.classList.remove('hidden');
     } finally {
       setLoading(false);
     }

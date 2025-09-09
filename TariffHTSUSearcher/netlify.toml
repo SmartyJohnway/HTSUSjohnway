@@ -2,7 +2,7 @@
 
 [build]
   base    = "TariffHTSUSearcher"   # path within the repo
-  command = "echo 'No build command required'"
+  command = "npm run build"
   publish = "."
 
 [build.environment]
@@ -16,3 +16,19 @@
 from = "/*"
 to = "/index.html"
 status = 200
+
+[[scheduled.functions]]
+  name = "refresh-hts"
+  cron = "0 3 * * *"
+
+[[scheduled.functions]]
+  name = "refresh-fr232"
+  cron = "30 3 * * *"
+
+[[scheduled.functions]]
+  name = "refresh-regs232"
+  cron = "0 4 * * *"
+
+[[scheduled.functions]]
+  name = "build-search-index"
+  cron = "0 5 * * *"

@@ -1,9 +1,10 @@
+
 // --- GLOBAL ELEMENTS & STATE ---
 const tabs = document.querySelectorAll('.tab-btn');
-const contents = { 
-    queryContent: document.getElementById('queryContent'), 
-    htsContent: document.getElementById('htsContent'), 
-    sourcesContent: document.getElementById('sourcesContent') 
+const contents = {
+    queryContent: document.getElementById('queryContent'),
+    htsContent: document.getElementById('htsContent'),
+    sourcesContent: document.getElementById('sourcesContent')
 };
 // This is no longer needed for App 2 but might be used by App 1's hts-code-link logic
 let htsAllData = []; 
@@ -36,6 +37,7 @@ function initializeApp() {
     } else {
         console.error('initializeHtsApiApp is not available');
     }
+
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
