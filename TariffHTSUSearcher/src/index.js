@@ -56,9 +56,7 @@ export function initializeHtsApiApp() {
         }
         data = await response.json();
       } catch (proxyError) {
-        const response = await fetch(directUrl, {
-          headers: { 'User-Agent': 'Tariff-Query-App/1.0' }
-        });
+        const response = await fetch(directUrl);
         const contentType = response.headers.get('content-type') || '';
         if (!response.ok || !contentType.includes('application/json')) {
           throw new Error('查詢服務暫時無法使用，請稍後再試');
