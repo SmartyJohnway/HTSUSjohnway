@@ -121,44 +121,18 @@
 
         <!-- Tab 3: Official Sources Content -->
         <div id="sourcesContent" class="hidden">
-             <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg space-y-8">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">官方資料庫與主要法規</h2>
-                     <a href="https://hts.usitc.gov/" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors mb-4">
-                        <p class="font-semibold text-blue-600">美國國際貿易委員會 (USITC) - HTSUS 官方查詢網站</p>
-                        <p class="text-sm text-gray-600">查詢所有進口產品HTSUS碼、稅率及法規的最終權威來源。 (目前版本: 2025 HTS Revision 19)</p>
-                    </a>
-                    <a href="https://www.bis.doc.gov/index.php/232-steel" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <p class="font-semibold text-blue-600">商務部工業與安全局 (BIS) - 鋼鐵232專頁</p>
-                        <p class="text-sm text-gray-600">提供所有關於鋼鐵232條款的背景、法規、公告及排除程序的官方入口。</p>
-                    </a>
-                    <a href="https://www.bis.doc.gov/index.php/232-aluminum" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors mt-4">
-                        <p class="font-semibold text-blue-600">商務部工業與安全局 (BIS) - 鋁232專頁</p>
-                        <p class="text-sm text-gray-600">提供所有關於鋁232條款的背景、法規、公告及排除程序的官方入口。</p>
-                    </a>
-                </div>
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">最新衍生品公告 (2025/08/18 生效)</h2>
-                    <div class="space-y-4">
-                        <a href="https://content.govdelivery.com/accounts/USDHSCBP/bulletins/3ee1cba" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">CBP 鋼鐵衍生品指引 (CSMS #65936570)</p><p class="text-sm text-gray-600">美國海關暨邊境保衛局發布的官方指引，詳細說明新增鋼鐵衍生品的執行細節。</p></a>
-                        <a href="https://content.govdelivery.com/bulletins/gd/USDHSCBP-3ee1ce7?wgt_ref=USDHSCBP_WIDGET_2" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">CBP 鋁衍生品指引 (CSMS #65936615)</p><p class="text-sm text-gray-600">美國海關暨邊境保衛局發布的官方指引，詳細說明新增鋁衍生品的執行細節。</p></a>
-                        <a href="https://www.federalregister.gov/documents/2025/08/19/2025-15819/adoption-and-procedures-of-the-section-232-steel-and-aluminum-tariff-inclusions-process" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><p class="font-semibold text-blue-600">聯邦公報官方公告</p><p class="text-sm text-gray-600">美國政府在《聯邦公報》上發布的正式法律文件，確認新增407項衍生品清單。</p></a>
-                    </div>
-                </div>
-                 <!-- Sources Suite Tabs -->
-                 <section id="sources-suite" class="mt-6">
-                 <div class="border-b flex gap-2 text-sm">
-                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app1">App1 來源入口</button>
-                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app2">App2 多來源搜尋</button>
-                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app3">App3 API/CSV</button>
-                 <button class="px-3 py-2 border-b-2" data-suite-tab="suite-app4">App4 索引搜尋(Beta)</button>
-                 </div>
-                 <div id="suite-app1" class="py-4"></div>
-                 <div id="suite-app2" class="py-4 hidden"></div>
-                 <div id="suite-app3" class="py-4 hidden"></div>
-                 <div id="suite-app4" class="py-4 hidden"></div>
-                 </section>
+            <div class="mb-6 border-b border-gray-200">
+                <nav class="flex -mb-px space-x-2 md:space-x-6" aria-label="Sources Tabs">
+                    <button class="sources-tab-btn active whitespace-nowrap py-2 px-1 md:px-2 border-b-2 font-medium text-sm md:text-base" data-target="sourcesApp1">官方來源</button>
+                    <button class="sources-tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 md:px-2 border-b-2 font-medium text-sm md:text-base" data-target="sourcesApp2">多來源搜尋</button>
+                    <button class="sources-tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 md:px-2 border-b-2 font-medium text-sm md:text-base" data-target="sourcesApp3">資料集</button>
+                    <button class="sources-tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 md:px-2 border-b-2 font-medium text-sm md:text-base" data-target="sourcesApp4">Minimal SE</button>
+                </nav>
             </div>
+            <div id="sourcesApp1" class="sources-pane"></div>
+            <div id="sourcesApp2" class="sources-pane hidden"></div>
+            <div id="sourcesApp3" class="sources-pane hidden"></div>
+            <div id="sourcesApp4" class="sources-pane hidden"></div>
         </div>
 
         <footer class="text-center mt-12 text-sm text-gray-500">
@@ -172,7 +146,7 @@
     <script type="module" src="js/app1.js"></script>
     <script type="module" src="js/app2.js"></script>
     <script type="module" src="js/sources-suite/sources-suite.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
 
 </body>
 </html>
