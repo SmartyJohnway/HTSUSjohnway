@@ -1,141 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>美國鋼鋁及稅則查詢系統 (整合版)</title>
-    <link rel="stylesheet" href="dist/tailwind.css">
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        .details-container { display: none; }
-        .details-container.open { display: block; }
-        .chevron { transition: transform 0.2s; }
-        .chevron.open { transform: rotate(90deg); }
-    </style>
-</head>
-<body class="bg-gray-100 text-gray-800">
-
-
-    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-        
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">美國鋼鋁及稅則查詢系統</h1>
-            <p class="text-gray-600 mt-2">整合關稅規則查詢與官方 HTSUS API 資料庫</p>
-        </header>
-
-        <!-- Tab Navigation -->
-        <div class="mb-6 border-b border-gray-200">
-            <nav class="flex -mb-px space-x-2 md:space-x-6" aria-label="Tabs">
-                <button id="tabQuery" class="tab-btn active whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg">
-                    關稅查詢
-                </button>
-                <button id="tabHts" class="tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg">
-                    HTSUS 稅則資料庫 (API)
-                </button>
-                <button id="tabSources" class="tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 md:px-2 border-b-2 font-medium text-base md:text-lg">
-                    官方來源
-                </button>
-            </nav>
-        </div>
-
-        <!-- Tab 1: Steel/Aluminum Tariff Content -->
-        <div id="queryContent">
-            <!-- Search and Filter Bar -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 sticky top-4 z-10">
-                <div class="flex flex-col md:flex-row gap-4">
-                    <div class="relative flex-grow">
-                        <input type="text" id="searchInput" placeholder="請先載入資料..." class="w-full p-4 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow disabled:opacity-50" disabled>
-                        <svg class="w-6 h-6 text-gray-400 absolute top-1/2 left-4 transform -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                    </div>
-                    <div class="flex items-center justify-center space-x-2 bg-gray-100 p-1 rounded-xl">
-                        <button id="filterAll" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold shadow">全部</button>
-                        <button id="filterSteel" class="filter-btn bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold">鋼鐵</button>
-                        <button id="filterAluminum" class="filter-btn bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold">鋁</button>
-                    </div>
-                </div>
-                <div id="app1Loader" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex flex-col sm:flex-row items-center gap-4">
-                    <p id="app1Status" class="text-sm text-blue-700 flex-grow">
-                        <span class="font-semibold">載入中...</span> 正在讀取關稅規則資料。
-                    </p>
-                </div>
-            </div>
-            <main id="resultsContainer" class="space-y-4 mt-8"></main>
-            <div id="noResults" class="hidden text-center py-16">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                <h3 class="mt-2 text-lg font-medium text-gray-900">找不到結果</h3>
-                <p class="mt-1 text-sm text-gray-500">請嘗試使用不同的關鍵字或調整篩選條件。</p>
-            </div>
-             <div id="app1Welcome" class="text-center py-16">
-                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
-                <h3 class="mt-2 text-lg font-medium text-gray-900">等待資料</h3>
-                <p class="mt-1 text-sm text-gray-500">資料將自動載入，請使用上方搜尋欄或篩選器進行查詢。</p>
-            </div>
-        </div>
-
-        <!-- Tab 2: HTSUS API Query Tool Content -->
-        <div id="htsContent" class="hidden">
-            <section class="bg-white border border-gray-200 rounded-xl p-4 md:p-5 mb-6 shadow-sm">
-                 <div class="flex items-center gap-3">
-                    <h2 class="text-lg font-semibold text-gray-900">資料來源:</h2>
-                    <a href="https://hts.usitc.gov/" target="_blank" class="text-sm text-blue-600 hover:underline">USITC Official API (via Netlify Proxy)</a>
-                </div>
-            </section>
-
-            <div class="sticky top-4 z-10 bg-gray-100/80 backdrop-blur-sm p-2 rounded-xl mb-4">
-                <div class="flex flex-col gap-2">
-                    <div class="flex gap-2">
-                        <div class="relative flex-grow">
-                            <input id="htsSearchInput" type="text" placeholder="輸入英文關鍵字或 HTS 碼 (e.g., copper, 0101.21.00)..." class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-4 pl-12 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-300" />
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            </div>
-                        </div>
-                        <button id="htsSearchBtn" class="btn btn-primary px-6">搜尋</button>
-                    </div>
-                    <div class="flex items-center gap-2 px-2">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" id="show232Only" class="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                            <span class="ml-2 text-sm text-gray-700">僅顯示 232 條款相關項目</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div id="htsStatusContainer">
-                <div id="htsLoader" class="hidden flex-col items-center justify-center text-center py-10">
-                    <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p class="mt-4 text-gray-500">正在透過代理查詢 USITC API 資料...</p>
-                </div>
-                <div id="htsWelcomeMessage" class="text-center py-16">
-                     <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.916 17.916 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>
-                    <h3 class="mt-2 text-lg font-medium text-gray-900">即時 HTSUS 查詢</h3>
-                    <p class="mt-1 text-sm text-gray-500">請在上方搜尋框輸入關鍵字，直接查詢美國官方稅則資料庫。</p>
-                </div>
-            </div>
-            <div id="htsResultsContainer" class="space-y-3"></div>
-        </div>
-
-        <!-- Tab 3: Official Sources Content -->
-        <div id="sourcesContent" class="hidden">
-            <div id="section232-root"></div>
-            <script type="module" src="./assets/section232-app.js"></script>
-        </div>
-
-        <footer class="text-center mt-12 text-sm text-gray-500">
-            <p>資料來源：美國海關暨邊境保衛局(CBP)及商務部(DOC)公告；HTSUS資料庫由USITC API提供。</p>
-            <p class="mt-1">本系統僅供參考，最終解釋請以美國官方公告為準。</p>
-            <p class="mt-1">製作者: Johnway</p>
-        </footer>
-    </div>
-
-    <script src="js/infra/api.js"></script>
-    <script type="module" src="js/app1.js"></script>
-    <script type="module" src="js/app2.js"></script>
-    <script type="module" src="js/main.js"></script>
-
-</body>
+    <link rel="stylesheet" href="/dist/tailwind.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 text-gray-800">
+    <div id="root"></div>
+    <script type="module" src="/dist/main.js"></script>
+  </body>
 </html>
