@@ -1,8 +1,6 @@
 import React from 'react';
 import { useResearchTrail, TrailItem } from '../context/ResearchTrailContext';
 import Button from './ui/Button';
-import Card from './ui/Card';
-
 const TrailItemCard = ({ item }: { item: TrailItem }) => {
   const renderContent = () => {
     switch (item.type) {
@@ -41,7 +39,7 @@ const TrailItemCard = ({ item }: { item: TrailItem }) => {
 };
 
 
-const ResearchTrailSidebar = () => {
+const ResearchTrailContent = () => {
   const { trail, clearTrail } = useResearchTrail();
 
   const handleExport = () => {
@@ -80,13 +78,8 @@ const ResearchTrailSidebar = () => {
   };
 
   return (
-    <Card className="flex flex-col h-full max-h-[80vh]">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold">研究軌跡</h2>
-        <p className="text-sm text-gray-500">您的查詢歷史將會顯示在此處。</p>
-      </div>
-
-      <div className="flex-grow overflow-y-auto">
+    <div className="flex flex-col h-full">
+      <div className="flex-grow overflow-y-auto -mx-4 -my-3">
         {trail.length === 0 ? (
           <div className="text-center text-gray-500 p-8">
             <p>尚未有任何研究活動。</p>
@@ -100,14 +93,14 @@ const ResearchTrailSidebar = () => {
         )}
       </div>
 
-      <div className="p-4 border-t border-gray-200">
+      <div className="pt-4 mt-4 border-t border-gray-200">
         <div className="flex gap-2">
           <Button onClick={handleExport} className="flex-1">匯出 (Markdown)</Button>
           <Button onClick={clearTrail} variant="secondary" className="flex-1">清除軌跡</Button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
-export default ResearchTrailSidebar;
+export default ResearchTrailContent;
