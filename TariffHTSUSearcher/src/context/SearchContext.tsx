@@ -19,7 +19,7 @@ function check232Applicability(item: HtsItem, allItems: HtsItem[]): boolean {
 }
 
 
-type Tab = 'query' | 'hts' | 'sources';
+type Tab = 'query' | 'hts' | 'sources' | 'matrix';
 
 interface SearchContextType {
   activeTab: Tab;

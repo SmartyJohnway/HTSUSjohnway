@@ -1,0 +1,1 @@
+module.exports = require('./netlify/functions/refresh-fr232.js')

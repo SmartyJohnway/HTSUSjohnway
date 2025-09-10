@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import TariffQuery from './components/TariffQuery';
 import HtsDatabase from './components/HtsDatabase';
 import Section232SearchApp from './apps/Section232SearchApp';
+import { RegulationsMatrix } from './apps/RegulationsMatrix';
 import { useSearch } from './context/SearchContext';
 import Button from './components/ui/Button';
 import Modal from './components/ui/Modal';
 import ResearchTrailContent from './components/ResearchTrailContent';
 
-type Tab = 'query' | 'hts' | 'sources';
+type Tab = 'query' | 'hts' | 'sources' | 'matrix';
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: 'matrix', label: '法規交叉矩陣' },
   { key: 'query', label: '關稅查詢' },
   { key: 'hts', label: 'HTSUS 稅則資料庫 (API)' },
   { key: 'sources', label: '官方來源與進階工具' },
@@ -21,6 +23,8 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'matrix':
+        return <RegulationsMatrix />;
       case 'query':
         return <TariffQuery />;
       case 'hts':
@@ -28,7 +32,7 @@ function App() {
       case 'sources':
         return <Section232SearchApp />;
       default:
-        return <TariffQuery />;
+        return <RegulationsMatrix />;
     }
   };
 

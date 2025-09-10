@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../app/TariffHTSUSearcher/netlify/functions/fr-proxy.ts"],
+  "sourceRoot": "/tmp/tmp-3206-d0EC0SnXnhm8",
+  "sourcesContent": ["import type { Handler } from \"@netlify/functions\";\n\nexport const handler: Handler = async (event) => {\n  try {\n    const params = new URLSearchParams(event.queryStringParameters || {});\n    if (!params.has(\"per_page\")) params.set(\"per_page\", \"20\");\n    if (!params.has(\"order\")) params.set(\"order\", \"newest\");\n    const api = `https://www.federalregister.gov/api/v1/documents.json?${params.toString()}`;\n    const r = await fetch(api);\n    const text = await r.text();\n    return {\n      statusCode: r.status,\n      headers: {\n        \"content-type\": \"application/json\",\n        \"cache-control\": \"no-store\"\n      },\n      body: text\n    };\n  } catch (err) {\n    return {\n      statusCode: 500,\n      body: JSON.stringify({ error: String(err) })\n    };\n  }\n};\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAEO,IAAM,UAAmB,OAAO,UAAU;AAC/C,MAAI;AACF,UAAM,SAAS,IAAI,gBAAgB,MAAM,yBAAyB,CAAC,CAAC;AACpE,QAAI,CAAC,OAAO,IAAI,UAAU,EAAG,QAAO,IAAI,YAAY,IAAI;AACxD,QAAI,CAAC,OAAO,IAAI,OAAO,EAAG,QAAO,IAAI,SAAS,QAAQ;AACtD,UAAM,MAAM,yDAAyD,OAAO,SAAS,CAAC;AACtF,UAAM,IAAI,MAAM,MAAM,GAAG;AACzB,UAAM,OAAO,MAAM,EAAE,KAAK;AAC1B,WAAO;AAAA,MACL,YAAY,EAAE;AAAA,MACd,SAAS;AAAA,QACP,gBAAgB;AAAA,QAChB,iBAAiB;AAAA,MACnB;AAAA,MACA,MAAM;AAAA,IACR;AAAA,EACF,SAAS,KAAK;AACZ,WAAO;AAAA,MACL,YAAY;AAAA,MACZ,MAAM,KAAK,UAAU,EAAE,OAAO,OAAO,GAAG,EAAE,CAAC;AAAA,IAC7C;AAAA,EACF;AACF;",
+  "names": []
+}

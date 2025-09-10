@@ -526,7 +526,7 @@ function App5() {
     setError(null);
     setResults(null);
 
-    const API_ENDPOINT = "/.netlify/functions/usitc-proxy";
+    const API_ENDPOINT = "/api/usitc-proxy";
     const queryPayload = {
       "source": "N", // N for NTR/Normal Trade Relations
       "time": {
@@ -583,25 +583,25 @@ function App5() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">HTSUS 產品碼 (最多 6 位)</label>
-            <input 
-              value={htsCode} 
-              onChange={(e) => setHtsCode(e.target.value)} 
+            <input
+              value={htsCode}
+              onChange={(e) => setHtsCode(e.target.value)}
               placeholder="例如: 721049"
               className="w-full px-3 py-2 rounded-xl border"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">夥伴國家代碼</label>
-            <input 
-              value={country} 
-              onChange={(e) => setCountry(e.target.value)} 
+            <input
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
               placeholder="例如: 5800 (台灣)"
               className="w-full px-3 py-2 rounded-xl border"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">年份</label>
-            <input 
+            <input
               type="number"
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value, 10))}
@@ -611,8 +611,8 @@ function App5() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleQuery} 
+          <button
+            onClick={handleQuery}
             disabled={loading}
             className="px-6 py-2 rounded-xl border bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-400"
           >
@@ -736,4 +736,3 @@ export default function Section232SearchApp() {
     </div>
   );
 }
-
